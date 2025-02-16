@@ -1,4 +1,4 @@
-# Codebase for the entire Socratic application
+# SocraticMonoRepo
+Codebase for the socratic web app
 
-Knowing what you have to know
 
