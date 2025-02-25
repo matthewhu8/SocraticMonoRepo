@@ -22,6 +22,7 @@ print("Llama model loaded!")
 
 @app.post("/generate", response_model=LLMResponse)
 def generate_text(request: LLMRequest):
+    return LLMResponse(completion="Mocked LLM response! Welcome to socratic-chatbot!")
     try:
         # Tokenize the prompt and ensure tensors are on the correct device
         inputs = tokenizer(request.prompt, return_tensors="pt")

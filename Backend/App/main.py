@@ -27,6 +27,7 @@ convo_service = ConversationService(call_llm=call_llm)
 @app.post("/chat", response_model=ChatResponse)
 def chat_endpoint(request: ChatRequest):
     try:
+        print(f"backend endpoint received request: {request}")
         response_text = convo_service.process_query(request.query, request.problem_id)
         return ChatResponse(response=response_text)
     except Exception as e:
