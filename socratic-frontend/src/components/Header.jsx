@@ -10,7 +10,7 @@ function Header() {
       justifyContent: 'space-between',
       alignItems: 'center'
     }}>
-      <h1>Socratic: Physics Challenge</h1>
+      <h1>Socratic: Practice Exam</h1>
       <nav>
         <a href="#" style={{ color: '#fff', marginRight: '1rem' }}>Home</a>
         <a href="#" style={{ color: '#fff', marginRight: '1rem' }}>About</a>

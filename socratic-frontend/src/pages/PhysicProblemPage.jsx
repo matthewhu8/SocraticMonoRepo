@@ -8,21 +8,37 @@ function PhysicsProblemPage() {
 
   // Sample physics problem data
   const problem = {
-    title: "Newton's Laws",
-    description: "A 10kg block is on a 30° incline. Calculate the net force acting on the block if friction is negligible.",
+    title: "Socratic Sample Problem",
+    description: "What is the result of x + y?",
     imageUrl: "" // Insert an image URL later if desired
   };
 
-  const handleSendMessage = (text) => {
+  const handleSendMessage = async (text) => {
     // Add the user's message
     const userMessage = { sender: 'User', text };
     setMessages(prev => [...prev, userMessage]);
-    
-    // Simulate an AI response after 1 second
-    setTimeout(() => {
-      const aiResponse = { sender: 'AI', text: "This is a simulated AI response. Please ask for more details if needed." };
-      setMessages(prev => [...prev, aiResponse]);
-    }, 1000);
+
+    try {
+      const response = await fetch('http://127.0.0.1:8000/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        // Passing problem_id and the user's query
+        body: JSON.stringify({
+          problem_id: 1, // Adjust based on your actual problem identifier
+          query: text,
+        }),
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      const aiMessage = { sender: 'AI', text: data.response };
+      setMessages(prev => [...prev, aiMessage]);
+    } catch (error) {
+      console.error('Error fetching AI response:', error);
+      const errorMessage = { sender: 'System', text: 'Error: Unable to get response from AI.' };
+      setMessages(prev => [...prev, errorMessage]);
+    }
   };
 
   return (
