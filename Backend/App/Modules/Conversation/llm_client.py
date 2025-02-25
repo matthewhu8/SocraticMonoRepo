@@ -2,7 +2,7 @@
 
 import requests
 
-LLM_SERVICE_URL = "http://llm-service:8000/generate"  # Use your microservice’s URL
+LLM_SERVICE_URL = "http://llm-service:8001/generate"  # Use your microservice’s URL
 
 def call_llm(prompt: str, max_tokens: int = 128) -> str:
     payload = {"prompt": prompt, "max_tokens": max_tokens}

@@ -1,10 +1,10 @@
 # backend/app/modules/conversation/conversation_service.py
 from typing import Dict
-from llm_client import call_llm
+from .llm_client import call_llm
 
 
 class ConversationService:
-    def __init__(self, llmCall: call_llm):
+    def __init__(self, call_llm: call_llm):
         self.llm_call = call_llm
 
     def process_query(self, user_query: str, problem_id: int) -> str:
