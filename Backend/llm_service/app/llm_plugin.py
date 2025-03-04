@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod 
 from transformers import AutoTokenizer, AutoModelForCausalLM
-import openai as openai # type: ignore
+
 
 # abstract class to be inherited; think of it likes an interface in Java
 class LLMPlugin(ABC):
@@ -32,20 +32,4 @@ class llamaPlugin(LLMPlugin):
         completion = generated_text[len(prompt):].strip()
         return completion
 
-# class gptPlugin(LLMPlugin):
-#     def __init__(self, api_key: str, model_name: str = "text-davinci-003"):
-#         super().__init__()
-#         self.api_key = api_key
-#         self.model_name = model_name
-#         openai.api_key = self.api_key
-
-#     def generate(self, prompt: str, max_tokens: int = 128) -> str:
-#         response = openai.Completion.create(
-#             model=self.model_name,
-#             prompt=prompt,
-#             max_tokens=max_tokens,
-#             temperature=0.7
-#         )
-#         completion = response.choices[0].text.strip()
-#         return completion
         
