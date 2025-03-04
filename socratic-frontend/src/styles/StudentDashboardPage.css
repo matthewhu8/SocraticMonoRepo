@@ -1,0 +1,358 @@
+.student-dashboard-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  padding: 2rem;
+  background-color: #f9f9f9;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+
+.sticky-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background-color: white;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  padding: 0.5rem 0;
+  margin-bottom: 2rem;
+  width: 100%;
+}
+
+.nav-container {
+  display: flex;
+  justify-content: center;
+  max-width: 1000px;
+  margin: 0 auto;
+  gap: 1rem;
+}
+
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.8rem 1.5rem;
+  text-decoration: none;
+  color: #7f8c8d;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  min-width: 120px;
+}
+
+.nav-item:hover {
+  background-color: #f8f9fa;
+  color: #3498db;
+  transform: translateY(-2px);
+}
+
+.nav-item.active {
+  background-color: #e9f5fe;
+  color: #3498db;
+  font-weight: 500;
+}
+
+.nav-icon {
+  font-size: 1.5rem;
+  margin-bottom: 0.3rem;
+}
+
+.nav-label {
+  font-size: 0.9rem;
+}
+
+.dashboard-header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+  width: 100%;
+}
+
+.dashboard-header h1 {
+  font-size: 2.5rem;
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
+}
+
+.dashboard-header p {
+  font-size: 1.2rem;
+  color: #7f8c8d;
+}
+
+.welcome-message {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: 1.1rem;
+  color: #3498db;
+  font-weight: 500;
+}
+
+.dashboard-content {
+  width: 100%;
+  max-width: 1000px;
+}
+
+/* Knowledge Map Styling */
+.knowledge-map-section {
+  background-color: white;
+  border-radius: 12px;
+  padding: 2rem;
+  margin-bottom: 3rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.section-header h2 {
+  color: #2c3e50;
+  font-size: 1.5rem;
+  margin: 0;
+}
+
+.section-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.refresh-btn {
+  padding: 0.5rem 1rem;
+  background-color: #f0f2f5;
+  border: none;
+  border-radius: 5px;
+  color: #2c3e50;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.2s;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.refresh-btn:hover {
+  background-color: #e2e6ea;
+  transform: translateY(-2px);
+}
+
+.refresh-btn:active {
+  transform: translateY(0);
+}
+
+.refresh-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.section-description {
+  color: #7f8c8d;
+  margin-bottom: 1.5rem;
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 3rem 0;
+  color: #7f8c8d;
+}
+
+.loading-spinner {
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-left: 4px solid #3498db;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.knowledge-map {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  justify-content: center;
+}
+
+.knowledge-node {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background-color: white;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s, box-shadow 0.3s;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.knowledge-node:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.knowledge-node.priority-high {
+  background: linear-gradient(45deg, #ff9a9e 0%, #fad0c4 99%, #fad0c4 100%);
+}
+
+.knowledge-node.priority-medium {
+  background: linear-gradient(120deg, #84fab0 0%, #8fd3f4 100%);
+}
+
+.knowledge-node.priority-low {
+  background: linear-gradient(to top, #cfd9df 0%, #e2ebf0 100%);
+}
+
+.topic-progress {
+  position: absolute;
+  top: 30px;
+  width: 80%;
+  text-align: center;
+}
+
+.progress-bar {
+  height: 8px;
+  background-color: rgba(255, 255, 255, 0.5);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 5px;
+}
+
+.progress-fill {
+  height: 100%;
+  width: var(--progress);
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 4px;
+}
+
+.progress-text {
+  font-size: 0.8rem;
+  color: rgba(0, 0, 0, 0.7);
+}
+
+.topic-name {
+  font-weight: bold;
+  font-size: 1.2rem;
+  color: rgba(0, 0, 0, 0.8);
+  text-align: center;
+  padding: 0 10px;
+  margin-top: 15px;
+}
+
+.ai-confidence {
+  font-size: 0.75rem;
+  color: rgba(0, 0, 0, 0.6);
+  margin-top: 5px;
+  background-color: rgba(255, 255, 255, 0.7);
+  padding: 2px 6px;
+  border-radius: 10px;
+  position: absolute;
+  bottom: 15px;
+}
+
+/* Stats Section Styling */
+.stats-section {
+  background-color: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+}
+
+.stats-section h3 {
+  color: #2c3e50;
+  font-size: 1.3rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid #eaeaea;
+  padding-bottom: 0.5rem;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+}
+
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  transition: background-color 0.2s, transform 0.2s;
+}
+
+.stat-card:hover {
+  background-color: #e9ecef;
+  transform: translateY(-3px);
+}
+
+.stat-number {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #3498db;
+  margin-bottom: 0.3rem;
+}
+
+.stat-label {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.dashboard-footer {
+  margin-top: 3rem;
+  text-align: center;
+}
+
+.back-link {
+  color: #3498db;
+  text-decoration: none;
+  transition: color 0.2s, transform 0.2s;
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border: 1px solid #e2e6ea;
+  border-radius: 6px;
+}
+
+.back-link:hover {
+  color: #2980b9;
+  transform: translateY(-2px);
+  border-color: #3498db;
+}
+
+/* Responsive design for sticky nav */
+@media (max-width: 768px) {
+  .nav-container {
+    gap: 0.5rem;
+    justify-content: space-around;
+  }
+  
+  .nav-item {
+    padding: 0.6rem 0.8rem;
+    min-width: auto;
+    flex: 1;
+  }
+  
+  .nav-label {
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .nav-item {
+    padding: 0.5rem 0.3rem;
+  }
+  
+  .nav-icon {
+    font-size: 1.2rem;
+  }
+}
