@@ -1,10 +1,10 @@
-//// filepath: /Users/matthewhu/Code/SocraticMonoRepo/socratic-frontend/src/pages/AssessmentPage.jsx
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import '../styles/AssessmentPage.css';
 
 function AssessmentPage() {
   const [testCode, setTestCode] = useState('');
+  const [username, setUsername] = useState('');
   const [assessmentHistory, setAssessmentHistory] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -71,11 +71,13 @@ function AssessmentPage() {
 
   const handleTestCodeSubmit = (e) => {
     e.preventDefault();
-    if (testCode.trim()) {
+    if (testCode.trim() && username.trim()) {
       // In a real app, validate the test code with an API call
-      console.log(`Joining test with code: ${testCode}`);
-      // Then navigate to the test page with the code as parameter
-      navigate(`/student/assessment/test/${testCode}`);
+      console.log(`Joining test with code: ${testCode} as user: ${username}`);
+      // Then navigate to the test page with the code and username as parameters
+      // Store username in localStorage for persistence
+      localStorage.setItem('username', username);
+      navigate(`/student/assessment/test/${testCode}?username=${encodeURIComponent(username)}`);
     }
   };
 
@@ -90,17 +92,11 @@ function AssessmentPage() {
     <div className="assessment-page-container">
       <div className="sticky-nav">
         <div className="nav-container">
-          <Link to="/student/learning-modules" className="nav-item">
-            <span className="nav-icon">📚</span>
-            <span className="nav-label">Learning Modules</span>
+          <Link to="/" className="nav-item">
+            <span className="nav-label">Socratic</span>
           </Link>
-          <Link to="/student/practice" className="nav-item">
-            <span className="nav-icon">🏋️‍♂️</span>
-            <span className="nav-label">Practice</span>
-          </Link>
-          <Link to="/student/assessment" className="nav-item active">
-            <span className="nav-icon">📝</span>
-            <span className="nav-label">Assessment</span>
+          <Link to="/student" className="nav-item">
+            <span className="nav-label">Student Dashboard</span>
           </Link>
         </div>
       </div>
@@ -113,17 +109,29 @@ function AssessmentPage() {
       <div className="assessment-content">
         <div className="join-test-section">
           <h2>Join a Test</h2>
-          <p>Enter the test code provided by your teacher to start an assessment</p>
+          <p>Enter your name and the test code provided by your teacher</p>
           
           <form onSubmit={handleTestCodeSubmit} className="test-code-form">
-            <input
-              type="text"
-              value={testCode}
-              onChange={(e) => setTestCode(e.target.value)}
-              placeholder="Enter test code (e.g., ABC123)"
-              className="test-code-input"
-              required
-            />
+            <div className="input-group">
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Your Name"
+                className="username-input"
+                required
+              />
+            </div>
+            <div className="input-group">
+              <input
+                type="text"
+                value={testCode}
+                onChange={(e) => setTestCode(e.target.value)}
+                placeholder="Enter test code (e.g., ABC123)"
+                className="test-code-input"
+                required
+              />
+            </div>
             <button type="submit" className="join-button">Join Test</button>
           </form>
         </div>

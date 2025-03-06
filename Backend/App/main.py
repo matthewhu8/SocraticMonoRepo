@@ -6,6 +6,8 @@ from .Modules.Conversation.conversation_service import ConversationService
 from .Modules.Conversation.llm_client import call_llm
 from .Modules.Problem.problem_service import ProblemService
 from fastapi.middleware.cors import CORSMiddleware
+from datetime import datetime
+
 
 # Import database session dependency and Test model
 from .db.database import engine, SessionLocal, Base
@@ -47,6 +49,9 @@ class ChatQuery(BaseModel):
     question_index: Optional[int] = None
     user_id: Optional[str] = "anonymous"
 
+import os
+from sqlalchemy import inspect
+
 
 @app.post("/chat")
 def chat(query: ChatQuery):
@@ -64,6 +69,7 @@ def chat(query: ChatQuery):
         raise HTTPException(status_code=500, detail=str(e))
 
 class TestData(BaseModel):
+    name: str
     code: str
     questions: List[Dict[str, Any]]
 
@@ -72,10 +78,12 @@ class TestData(BaseModel):
 def store_test(test_data: TestData, db: Session = Depends(get_db)):  # Use Session instead of SessionLocal
     # Check required fields
     if not test_data.code or not test_data.questions:
+        print("No code or questions provided")
+        print("Test data", test_data)
         raise HTTPException(status_code=400, detail="Test code and questions are required.")
     
     try:
-        result = problem_service.create_test(db, test_data.code, test_data.questions)
+        result = problem_service.create_test(db, test_data.name, test_data.code, test_data.questions)
         return {"message": "Test created", "test": result}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

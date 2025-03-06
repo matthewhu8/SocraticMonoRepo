@@ -72,7 +72,6 @@ function CreateTestPage() {
       });
 
       if (response.ok) {
-        const data = await response.json();
         alert(`Test created successfully! Test code: ${finalTestCode}`);
         setTestSubmitted(true);
       } else {

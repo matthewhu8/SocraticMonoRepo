@@ -4,12 +4,13 @@ from sqlalchemy.orm import Session
 from ...db.models import Test
 
 class ProblemService:
-    def create_test(self, db: Session, code: str, questions: List[Dict[str, Any]]) -> Dict:
+    def create_test(self, db: Session, name: str, code: str, questions: List[Dict[str, Any]]) -> Dict:
         """
         Create a new test with the given code and questions.
         
         Args:
             db: Database session
+            name: Test name
             code: Unique test code
             questions: List of question dictionaries
             
@@ -20,17 +21,50 @@ class ProblemService:
             ValueError: If test code already exists
         """
         # Check if test code already exists
-        existing_test = db.query(Test).filter(Test.code == code).first()
-        if existing_test:
-            raise ValueError(f"Test with code '{code}' already exists")
-        
-        # Create new test record
-        test_record = Test(code=code, questions=json.dumps(questions))
-        db.add(test_record)
-        db.commit()
-        db.refresh(test_record)
-        
-        return {"id": test_record.id, "code": test_record.code}
+        print("create test called in problem service")
+        try:
+            existing_test = db.query(Test).filter(Test.code == code).first()
+            if existing_test:
+                raise ValueError(f"Test with code '{code}' already exists")
+            
+            # Create new test record
+            test_record = Test(test_name=name, code=code, questions=json.dumps(questions))
+            db.add(test_record)
+            db.commit()
+            db.refresh(test_record)
+            
+            return {"id": test_record.id, "code": test_record.code}
+        except Exception as e:
+            # Check if the error is due to missing name column
+            if "no such column: tests.name" in str(e):
+                print("Warning: 'name' column not found in tests table. Using alternative approach.")
+                # Try creating the test without the name column
+                from sqlalchemy.sql import text
+                try:
+                    # First check if test exists
+                    result = db.execute(text("SELECT id FROM tests WHERE code = :code"), {"code": code})
+                    if result.fetchone():
+                        raise ValueError(f"Test with code '{code}' already exists")
+                    
+                    # Insert without name column
+                    result = db.execute(
+                        text("INSERT INTO tests (code, questions) VALUES (:code, :questions)"),
+                        {"code": code, "questions": json.dumps(questions)}
+                    )
+                    db.commit()
+                    
+                    # Get the created record ID
+                    result = db.execute(text("SELECT id FROM tests WHERE code = :code"), {"code": code})
+                    test_id = result.fetchone()[0]
+                    
+                    return {"id": test_id, "code": code}
+                except Exception as inner_e:
+                    db.rollback()
+                    print(f"Error in fallback method: {inner_e}")
+                    raise inner_e
+            else:
+                # Re-raise other exceptions
+                raise e
         
     def get_test_by_code(self, db: Session, code: str) -> Optional[Dict]:
         """
@@ -52,7 +86,8 @@ class ProblemService:
         return {
             "id": test.id,
             "code": test.code,
-            "questions": json.loads(test.questions)
+            "questions": json.loads(test.questions),
+            "name": test.test_name
         }
     
     def get_test_question(self, db: Session, test_code: str, question_index: int) -> Optional[Dict]:
