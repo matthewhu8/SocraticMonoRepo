@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import Header from '../components/Header';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import ProblemDisplay from '../components/ProblemDisplay';
 import ChatBox from '../components/ChatBox';
 import '../styles/TestPage.css';
@@ -44,7 +43,6 @@ function TestPage() {
         }
         
         setTestData(data);
-        // Initialize empty messages array for each question
         const initialMessages = {};
         if (data.questions) {
           data.questions.forEach((_, index) => {
@@ -220,7 +218,16 @@ function TestPage() {
   if (loading) {
     return (
       <div className="test-page-container">
-        <Header />
+        <div className="sticky-nav">
+          <div className="nav-container">
+            <Link to="/" className="nav-item">
+              <span className="nav-label">Socratic</span>
+            </Link>
+            <Link to="/student" className="nav-item">
+              <span className="nav-label">Student Dashboard</span>
+            </Link>
+          </div>
+        </div>
         <div className="loading-container">
           <div className="loading-spinner"></div>
           <p>Loading test...</p>
@@ -232,7 +239,16 @@ function TestPage() {
   if (error) {
     return (
       <div className="test-page-container">
-        <Header />
+        <div className="sticky-nav">
+          <div className="nav-container">
+            <Link to="/" className="nav-item">
+              <span className="nav-label">Socratic</span>
+            </Link>
+            <Link to="/student" className="nav-item">
+              <span className="nav-label">Student Dashboard</span>
+            </Link>
+          </div>
+        </div>
         <div className="error-container">
           <h2>Error Loading Test</h2>
           <p>{error}</p>
@@ -250,7 +266,16 @@ function TestPage() {
   if (testCompleted) {
     return (
       <div className="test-page-container">
-        <Header />
+        <div className="sticky-nav">
+          <div className="nav-container">
+            <Link to="/" className="nav-item">
+              <span className="nav-label">Socratic</span>
+            </Link>
+            <Link to="/student" className="nav-item">
+              <span className="nav-label">Student Dashboard</span>
+            </Link>
+          </div>
+        </div>
         <div className="test-complete-container">
           <h2>Test Complete!</h2>
           <div className="test-summary">
@@ -290,7 +315,16 @@ function TestPage() {
   if (!currentQuestion) {
     return (
       <div className="test-page-container">
-        <Header />
+        <div className="sticky-nav">
+          <div className="nav-container">
+            <Link to="/" className="nav-item">
+              <span className="nav-label">Socratic</span>
+            </Link>
+            <Link to="/student" className="nav-item">
+              <span className="nav-label">Student Dashboard</span>
+            </Link>
+          </div>
+        </div>
         <div className="error-container">
           <h2>No Questions Found</h2>
           <p>This test does not contain any questions.</p>
@@ -307,9 +341,18 @@ function TestPage() {
 
   return (
     <div className="test-page-container">
-      <Header />
+      <div className="sticky-nav">
+        <div className="nav-container">
+          <Link to="/" className="nav-item">
+            <span className="nav-label">Socratic</span>
+          </Link>
+          <Link to="/student" className="nav-item">
+            <span className="nav-label">Student Dashboard</span>
+          </Link>
+        </div>
+      </div>
       <div className="test-header">
-        <h1>Test: {testData.code}</h1>
+        <h1>{testData.name}</h1>
         <div className="question-progress">
           Question {currentQuestionIndex + 1} of {testData.questions.length}
         </div>
