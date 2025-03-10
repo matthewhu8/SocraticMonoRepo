@@ -14,6 +14,8 @@ function TestPage() {
   const [messages, setMessages] = useState([]);
   const [answers, setAnswers] = useState({});
   const [testCompleted, setTestCompleted] = useState(false);
+  const [questionResults, setQuestionResults] = useState({});
+  const [testStartTime, setTestStartTime] = useState(null);
 
   // Fetch test data when component mounts
   useEffect(() => {
@@ -61,6 +63,42 @@ function TestPage() {
     fetchTest();
   }, [testCode]);
 
+  // Initialize test tracking when test data is loaded
+  useEffect(() => {
+    if (testData && !testStartTime) {
+      setTestStartTime(new Date());
+      // Initialize question results
+      const initialResults = {};
+      testData.questions.forEach((_, index) => {
+        initialResults[index] = {
+          startTime: new Date(),
+          endTime: null,
+          answer: null,
+          isCorrect: false,
+          timeSpent: 0,
+          attempts: 0,
+          messages: []
+        };
+      });
+      setQuestionResults(initialResults);
+    }
+  }, [testData]);
+
+  // Update question tracking when navigating questions
+  useEffect(() => {
+    if (questionResults[currentQuestionIndex]) {
+      // Mark previous question as ended
+      setQuestionResults(prev => ({
+        ...prev,
+        [currentQuestionIndex]: {
+          ...prev[currentQuestionIndex],
+          endTime: new Date(),
+          timeSpent: (new Date() - new Date(prev[currentQuestionIndex].startTime)) / 1000
+        }
+      }));
+    }
+  }, [currentQuestionIndex]);
+
   // Get current question data
   const getCurrentQuestion = () => {
     if (!testData || !testData.questions || testData.questions.length === 0) {
@@ -89,10 +127,16 @@ function TestPage() {
   const handleSendMessage = async (text) => {
     const questionId = currentQuestionIndex;
     
-    console.log("Sending message for question:", questionId);
-    console.log("Message text:", text);
+    // Update message history
+    setQuestionResults(prev => ({
+      ...prev,
+      [questionId]: {
+        ...prev[questionId],
+        messages: [...(prev[questionId]?.messages || []), { sender: 'student', content: text }]
+      }
+    }));
     
-    // Add user message
+    // Add user message to chat
     const userMessage = { sender: 'User', text };
     setMessages(prev => ({
       ...prev,
@@ -100,47 +144,50 @@ function TestPage() {
     }));
   
     try {
-      // Use a default problem_id (e.g., 1) since we're now using test_code and question_index
-      const problemId = 1;
-      
-      console.log("Sending chat request with:", {
-        problem_id: problemId,
-        query: text,
-        test_code: testCode,
-        question_index: currentQuestionIndex
-      });
-      
       const response = await fetch('http://127.0.0.1:8000/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          problem_id: problemId,
+          problem_id: 1,
           query: text,
-          test_code: testCode, // Include the test code
-          question_index: currentQuestionIndex, // Include the current question index
+          test_code: testCode,
+          question_index: currentQuestionIndex,
         }),
       });
       
       if (!response.ok) {
-        console.error("Chat response error:", response.status, response.statusText);
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
       const data = await response.json();
-      console.log("Chat response received:", data);
+      
+      // Update message history with AI response
+      setQuestionResults(prev => ({
+        ...prev,
+        [questionId]: {
+          ...prev[questionId],
+          messages: [...(prev[questionId]?.messages || []), { sender: 'ai', content: data.response }]
+        }
+      }));
       
       const aiMessage = { sender: 'AI', text: data.response };
-      
       setMessages(prev => ({
         ...prev,
         [questionId]: [...(prev[questionId] || []), aiMessage]
       }));
       
-      // Check if the message looks like an answer attempt
+      // Check for answer attempt
       const numberMatch = text.match(/\b\d+(\.\d+)?\b/);
       if (numberMatch) {
         const answerValue = numberMatch[0];
-        console.log(`Detected potential answer: ${answerValue}`);
+        setQuestionResults(prev => ({
+          ...prev,
+          [questionId]: {
+            ...prev[questionId],
+            answer: answerValue,
+            attempts: (prev[questionId]?.attempts || 0) + 1
+          }
+        }));
         setAnswers(prev => ({
           ...prev,
           [questionId]: answerValue
@@ -171,10 +218,49 @@ function TestPage() {
     }
   };
 
-  const submitTest = () => {
-    // In a real implementation, you would send the answers to the server here
-    alert('Test submitted successfully!');
-    navigate('/student/assessment');
+  const submitTest = async () => {
+    try {
+      const testEndTime = new Date();
+      const totalTime = (testEndTime - new Date(testStartTime)) / 1000;
+      
+      // Calculate total correct answers
+      const correctAnswers = Object.values(questionResults).filter(result => result.isCorrect).length;
+      
+      const testResult = {
+        test_code: testCode,
+        username: "current_user", // TODO: Get from auth context
+        score: (correctAnswers / testData.questions.length) * 100,
+        total_questions: testData.questions.length,
+        correct_questions: correctAnswers,
+        start_time: testStartTime,
+        end_time: testEndTime,
+        question_results: Object.entries(questionResults).map(([index, result]) => ({
+          question_id: testData.questions[index].id,
+          student_answer: result.answer,
+          is_correct: result.isCorrect,
+          time_spent: result.timeSpent,
+          start_time: result.startTime,
+          end_time: result.endTime,
+          messages: result.messages
+        }))
+      };
+
+      const response = await fetch('http://127.0.0.1:8000/test-results', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(testResult)
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit test results');
+      }
+
+      alert('Test submitted successfully!');
+      navigate('/student/assessment');
+    } catch (error) {
+      console.error('Error submitting test:', error);
+      alert('Failed to submit test results. Please try again.');
+    }
   };
 
   // Debug panel component
