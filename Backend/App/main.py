@@ -10,7 +10,8 @@ from datetime import datetime
 
 
 # Import database session dependency and Test model
-from .db.database import engine, SessionLocal, Base
+from Database.session import engine, SessionLocal
+from Database.models import Base
 import json
 Base.metadata.create_all(bind=engine)
 
