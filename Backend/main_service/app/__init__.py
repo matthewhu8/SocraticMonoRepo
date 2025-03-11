@@ -1,0 +1,3 @@
+"""
+Main Service for Socratic
+""" 
