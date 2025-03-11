@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  main-service:
+    build: 
+      context: ./main_service
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_SERVICE_URL=http://database-service:8000
+      - VECTOR_SERVICE_URL=http://vector-service:8000
+    depends_on:
+      - database-service
+      - vector-service
+
+  database-service:
+    build: 
+      context: ./database_service
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8000"
+    volumes:
+      - ./data/database:/app/data
+    environment:
+      - DATABASE_URL=sqlite:///data/socratic.db
+
+  vector-service:
+    build: 
+      context: ./vector_service
+      dockerfile: Dockerfile
+    ports:
+      - "8002:8000"
+    volumes:
+      - ./data/vector_store:/app/data/vector_store
+    environment:
+      - MODEL_NAME=all-MiniLM-L6-v2 
