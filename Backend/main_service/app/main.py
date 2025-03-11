@@ -65,7 +65,10 @@ class TestResponse(BaseModel):
     questions: List[Dict[str, Any]]
 
 # Initialize services
-convo_service = ConversationService(llm_service_url=LLM_SERVICE_URL)
+convo_service = ConversationService(
+    llm_service_url=LLM_SERVICE_URL,
+    database_service_url=DATABASE_SERVICE_URL
+)
 problem_service = ProblemService(
     database_service_url=DATABASE_SERVICE_URL,
     vector_service_url=VECTOR_SERVICE_URL
