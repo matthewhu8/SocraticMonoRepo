@@ -13,7 +13,6 @@ class Context(BaseModel):
     problem_id: int
     test_code: str
     question_index: int
-    conversation_history: List[Dict[str, str]]
 
 class LLMRequest(BaseModel):
     query: str
@@ -23,7 +22,7 @@ class LLMResponse(BaseModel):
     response: str
 
 MODEL_PATH = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
-VECTOR_SERVICE_URL = "http://vector_service:8002"  # Update with your vector service URL
+VECTOR_SERVICE_URL = "http://vector_service:8002"
 
 print("Loading TinyLlama model...")
 tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
@@ -35,72 +34,93 @@ model = AutoModelForCausalLM.from_pretrained(
     use_cache=True)
 print("TinyLlama model loaded!")
 
-async def get_relevant_context(problem_id: int, query: str) -> str:
-    """Fetch relevant context from vector service."""
+async def get_hidden_values(problem_id: int, query: str) -> Optional[str]:
+    """Search for hidden values specific to this problem."""
     try:
         async with httpx.AsyncClient() as client:
-            # Get problem details
-            problem_response = await client.get(
-                f"{VECTOR_SERVICE_URL}/problems/{problem_id}"
-            )
-            problem_response.raise_for_status()
-            problem_data = problem_response.json()
-
-            # Get relevant teaching materials
-            context_response = await client.post(
-                f"{VECTOR_SERVICE_URL}/search",
+            response = await client.post(
+                f"{VECTOR_SERVICE_URL}/search_hidden_values",
                 json={
                     "query": query,
+                    "problem_id": problem_id,
+                }
+            )
+            response.raise_for_status()
+            data = response.json()
+            
+            if data["results"]:
+                # If we found hidden values, format them for the LLM
+                hidden_values = "\nHidden Values Found:\n"
+                for result in data["results"]:
+                    hidden_values += f"- {result['content']}\n"
+                return hidden_values
+            return None
+            
+    except Exception as e:
+        print(f"Error fetching hidden values: {e}")
+        return None
+
+async def get_topic_context(problem_id: int, query: str) -> str:
+    """Get relevant topic information for the problem."""
+    try:
+        async with httpx.AsyncClient() as client:
+            # First get the problem topic
+            topic_response = await client.get(
+                f"{VECTOR_SERVICE_URL}/problems/{problem_id}/topic"
+            )
+            topic_response.raise_for_status()
+            topic_data = topic_response.json()
+            
+            # Then search for relevant materials using both query and topic
+            context_response = await client.post(
+                f"{VECTOR_SERVICE_URL}/search_materials",
+                json={
+                    "query": query,
+                    "topic": topic_data["topic"],
                     "problem_id": problem_id,
                     "limit": 3
                 }
             )
             context_response.raise_for_status()
             context_data = context_response.json()
-
-            # Combine problem and teaching material context
-            context = f"""Problem: {problem_data['question']}
-Answer: {problem_data['answer']}
-Explanation: {problem_data['explanation']}
-
-Relevant Teaching Materials:
-"""
-            for material in context_data['results']:
+            
+            # Format the teaching materials
+            context = "\nRelevant Teaching Materials:\n"
+            for material in context_data["results"]:
                 context += f"- {material['content']}\n"
-
+                
             return context
+            
     except Exception as e:
-        print(f"Error fetching context: {e}")
+        print(f"Error fetching topic context: {e}")
         return ""
-
-def format_conversation_history(history: List[Dict[str, str]]) -> str:
-    """Format conversation history into a string."""
-    formatted = "\nConversation History:\n"
-    for msg in history:
-        role = "Student" if msg["role"] == "user" else "Assistant"
-        formatted += f"{role}: {msg['content']}\n"
-    return formatted
 
 @app.post("/generate", response_model=LLMResponse)
 async def generate_text(request: LLMRequest):
     try:
-        # Get relevant context from vector service
-        context = await get_relevant_context(
+        # First check if this is a request for hidden values
+        hidden_values = await get_hidden_values(
             request.context.problem_id,
             request.query
         )
-
-        # Format conversation history
-        conversation = format_conversation_history(request.context.conversation_history)
-
-        # Construct the full prompt
-        system_prompt = """You are a helpful teaching assistant. Use the provided context to help the student understand the problem and guide them towards the solution. Don't give away the answer directly, but provide helpful hints and explanations."""
+        
+        # Get topic context if no hidden values found
+        topic_context = "" if hidden_values else await get_topic_context(
+            request.context.problem_id,
+            request.query
+        )
+        
+        # Construct the prompt based on what we found
+        if hidden_values:
+            system_prompt = """You are a helpful teaching assistant. The student is asking about a hidden value in the problem. 
+Since they specifically asked for it, you can provide the hidden value from the context below."""
+        else:
+            system_prompt = """You are a helpful teaching assistant. Use the provided teaching materials to help the student 
+understand the problem and guide them towards the solution. Don't give away answers directly, but provide helpful hints and explanations."""
         
         full_prompt = f"""{system_prompt}
 
-{context}
-
-{conversation}
+{hidden_values if hidden_values else topic_context}
 
 Student: {request.query}
 Assistant: """

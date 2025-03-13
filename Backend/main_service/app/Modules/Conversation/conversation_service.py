@@ -52,7 +52,7 @@ class ConversationService:
     ) -> str:
         """Process a user query and return a response."""
         session_key = self._get_session_key(user_id, test_code, question_index)
-        test_key = self._get_test_key(user_id, test_code)
+        # test_key = self._get_test_key(user_id, test_code)
         
         # Get or initialize question session
         session_data = self.redis.get(session_key)
