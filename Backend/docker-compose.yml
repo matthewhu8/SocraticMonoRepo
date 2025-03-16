@@ -10,9 +10,11 @@ services:
     environment:
       - DATABASE_SERVICE_URL=http://database-service:8000
       - VECTOR_SERVICE_URL=http://vector-service:8000
+      - LLM_SERVICE_URL=http://llm-service:8001
     depends_on:
       - database-service
       - vector-service
+      - llm-service
 
   database-service:
     build: 
@@ -34,4 +36,33 @@ services:
     volumes:
       - ./data/vector_store:/app/data/vector_store
     environment:
-      - MODEL_NAME=all-MiniLM-L6-v2 
+      - MODEL_NAME=all-MiniLM-L6-v2
+
+  llm-service:
+    build:
+      context: ./llm_service
+      dockerfile: Dockerfile
+    ports:
+      - "8003:8001"
+    environment:
+      - PORT=8001
+      - MODEL_NAME=mistralai/Mistral-7B-Instruct-v0.1
+      - VECTOR_SERVICE_URL=http://vector-service:8000
+      - MODEL_CACHE_DIR=/app/data/model_cache
+      - MAX_LENGTH=2048
+      - MAX_NEW_TOKENS=512
+      - TEMPERATURE=0.7
+      - HUGGING_FACE_HUB_TOKEN=${HUGGING_FACE_HUB_TOKEN}
+    volumes:
+      - ./data/llm:/app/data
+      - llm_model_cache:/app/data/model_cache
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+volumes:
+  llm_model_cache: 

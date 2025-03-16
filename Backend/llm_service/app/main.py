@@ -6,6 +6,8 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 import torch
 import httpx
 from typing import Dict, List, Optional
+import os
+from pathlib import Path
 
 app = FastAPI(title="LLM Microservice")
 
@@ -21,18 +23,45 @@ class LLMRequest(BaseModel):
 class LLMResponse(BaseModel):
     response: str
 
-MODEL_PATH = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
-VECTOR_SERVICE_URL = "http://vector_service:8002"
+# Configuration from environment variables
+MODEL_NAME = os.getenv("MODEL_NAME", "mistralai/Mistral-7B-Instruct-v0.1")
+VECTOR_SERVICE_URL = os.getenv("VECTOR_SERVICE_URL", "http://vector-service:8000")
+MODEL_CACHE_DIR = os.getenv("MODEL_CACHE_DIR", "/app/data/model_cache")
+MAX_LENGTH = int(os.getenv("MAX_LENGTH", "2048"))
+MAX_NEW_TOKENS = int(os.getenv("MAX_NEW_TOKENS", "512"))
+TEMPERATURE = float(os.getenv("TEMPERATURE", "0.7"))
 
-print("Loading TinyLlama model...")
-tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
-model = AutoModelForCausalLM.from_pretrained(
-    MODEL_PATH,
-    device_map="auto",
-    torch_dtype=torch.float16,
-    low_cpu_mem_usage=True,
-    use_cache=True)
-print("TinyLlama model loaded!")
+# Create cache directory if it doesn't exist
+Path(MODEL_CACHE_DIR).mkdir(parents=True, exist_ok=True)
+
+print(f"Loading {MODEL_NAME} model...")
+try:
+    tokenizer = AutoTokenizer.from_pretrained(
+        MODEL_NAME,
+        cache_dir=MODEL_CACHE_DIR,
+        trust_remote_code=True
+    )
+    model = AutoModelForCausalLM.from_pretrained(
+        MODEL_NAME,
+        device_map="auto",
+        torch_dtype=torch.float16,
+        low_cpu_mem_usage=True,
+        use_cache=True,
+        cache_dir=MODEL_CACHE_DIR,
+        trust_remote_code=True
+    )
+    print(f"{MODEL_NAME} model loaded successfully!")
+except Exception as e:
+    print(f"Error loading model: {e}")
+    raise
+
+def format_prompt(system_prompt: str, context: str, query: str) -> str:
+    """Format the prompt according to Mistral's instruction format."""
+    return f"""<s>[INST] {system_prompt}
+
+{context}
+
+Student: {query} [/INST]"""
 
 async def get_hidden_values(problem_id: int, query: str) -> Optional[str]:
     """Search for hidden values specific to this problem."""
@@ -118,22 +147,21 @@ Since they specifically asked for it, you can provide the hidden value from the 
             system_prompt = """You are a helpful teaching assistant. Use the provided teaching materials to help the student 
 understand the problem and guide them towards the solution. Don't give away answers directly, but provide helpful hints and explanations."""
         
-        full_prompt = f"""{system_prompt}
-
-{hidden_values if hidden_values else topic_context}
-
-Student: {request.query}
-Assistant: """
+        full_prompt = format_prompt(
+            system_prompt,
+            hidden_values if hidden_values else topic_context,
+            request.query
+        )
 
         print(f"Processing query with context...")
-        inputs = tokenizer(full_prompt, return_tensors="pt", truncation=True, max_length=2048)
+        inputs = tokenizer(full_prompt, return_tensors="pt", truncation=True, max_length=MAX_LENGTH)
         inputs = {k: v.to(model.device) for k, v in inputs.items()}
         
         with torch.inference_mode():
             output_ids = model.generate(
                 **inputs,
-                max_new_tokens=512,
-                temperature=0.7,
+                max_new_tokens=MAX_NEW_TOKENS,
+                temperature=TEMPERATURE,
                 do_sample=True,
                 top_k=40,
                 num_beams=1,
