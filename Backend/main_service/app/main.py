@@ -132,16 +132,17 @@ async def create_test(test: TestCreate):
                 
                 # Store embedding in vector service
                 await client.post(
-                    f"{VECTOR_SERVICE_URL}/embeddings",
+                    f"{VECTOR_SERVICE_URL}/store_hidden_value",
                     json={
-                        "id": f"{test.code}_{question_id}",
-                        "text": question.public_question,
+                        "problem_id": f"{test.code}_{question_id}",
+                        "content": question.public_question,
                         "metadata": {
                             "test_code": test.code,
                             "question_id": question_id,
                             "answer": question.answer,
                             "subject": question.subject,
-                            "topic": question.topic
+                            "topic": question.topic,
+                            "hidden_values": question.hidden_values
                         }
                     }
                 )
