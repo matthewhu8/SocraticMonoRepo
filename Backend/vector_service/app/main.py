@@ -1,28 +1,23 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
-import numpy as np
-from sentence_transformers import SentenceTransformer
 import os
-import json
-from threading import Lock
 from datetime import datetime
-import chromadb
-from chromadb.utils import embedding_functions
+from threading import Lock
+from langchain_community.embeddings import SentenceTransformerEmbeddings
+from langchain_community.vectorstores import Chroma
+from langchain.schema import Document
 
 app = FastAPI(title="Vector Service")
 
-# Initialize the model
-model_name = 'all-MiniLM-L6-v2'
-model = SentenceTransformer(model_name)
-DIMENSION = 384  # Dimension of the embeddings
-
-# Chroma settings
+# Settings
 CHROMA_PERSIST_DIRECTORY = os.getenv("CHROMA_PERSIST_DIRECTORY", "./chroma_db")
+MODEL_NAME = 'all-MiniLM-L6-v2'
 
 # Collection names
 HIDDEN_VALUES_COLLECTION = "hidden_values"
 TEACHING_MATERIALS_COLLECTION = "teaching_materials"
+PROBLEMS_COLLECTION = "problems"
 
 class VectorDatabase:
     _instance = None
@@ -40,98 +35,192 @@ class VectorDatabase:
             with self._lock:
                 if not self._initialized:
                     try:
-                        # Initialize Chroma client with persistence
-                        self.client = chromadb.PersistentClient(path=CHROMA_PERSIST_DIRECTORY)
-                        
-                        # Initialize sentence transformer for embeddings
-                        self.embedding_function = embedding_functions.SentenceTransformerEmbeddingFunction(
-                            model_name=model_name
+                        # Initialize embedding function
+                        self.embeddings = SentenceTransformerEmbeddings(
+                            model_name=MODEL_NAME
                         )
                         
-                        # Create collections
-                        self.hidden_values = self.client.get_or_create_collection(
-                            name=HIDDEN_VALUES_COLLECTION,
-                            embedding_function=self.embedding_function
+                        # Initialize vector stores for different collections
+                        self.hidden_values = Chroma(
+                            collection_name=HIDDEN_VALUES_COLLECTION,
+                            embedding_function=self.embeddings,
+                            persist_directory=CHROMA_PERSIST_DIRECTORY
                         )
                         
-                        self.teaching_materials = self.client.get_or_create_collection(
-                            name=TEACHING_MATERIALS_COLLECTION,
-                            embedding_function=self.embedding_function
+                        self.teaching_materials = Chroma(
+                            collection_name=TEACHING_MATERIALS_COLLECTION,
+                            embedding_function=self.embeddings,
+                            persist_directory=CHROMA_PERSIST_DIRECTORY
+                        )
+                        
+                        self.problems = Chroma(
+                            collection_name=PROBLEMS_COLLECTION,
+                            embedding_function=self.embeddings,
+                            persist_directory=CHROMA_PERSIST_DIRECTORY
                         )
                         
                         self._initialized = True
                     except Exception as e:
-                        print(f"Failed to initialize Chroma: {str(e)}")
+                        print(f"Failed to initialize vector stores: {str(e)}")
                         raise
 
     def store_hidden_value(self, problem_id: str, content: str, metadata: Dict[str, Any]):
         """Store a hidden value with its embedding."""
-        # Format metadata to match the expected structure
-        metadata_with_hidden_values = {
-            "problem_id": problem_id,
-            "created_at": int(datetime.now().timestamp()),
-            "metadata": {
-                "hidden_values": metadata
+        # Create a LangChain Document
+        document = Document(
+            page_content=content,
+            metadata={
+                "problem_id": problem_id,
+                "created_at": int(datetime.now().timestamp()),
+                **metadata  # Include all other metadata
             }
-        }
-        
-        self.hidden_values.add(
-            documents=[content],
-            metadatas=[metadata_with_hidden_values],
-            ids=[f"{problem_id}_{int(datetime.now().timestamp())}"]
         )
+        
+        # Add document to Chroma
+        self.hidden_values.add_documents([document])
+
+    def store_problem(self, problem_id: str, content: str, metadata: Dict[str, Any]):
+        """Store a problem with its embedding."""
+        # Create a LangChain Document
+        document = Document(
+            page_content=content,
+            metadata={
+                "problem_id": problem_id,
+                "created_at": int(datetime.now().timestamp()),
+                **metadata  # Include all other metadata
+            }
+        )
+        
+        # Add document to Chroma
+        self.problems.add_documents([document])
 
     def store_teaching_material(self, topic: str, content: str, metadata: Dict[str, Any]):
         """Store a teaching material with its embedding."""
-        metadata_obj = {
-            "topic": topic,
-            "created_at": int(datetime.now().timestamp()),
-            "metadata": metadata
-        }
-        
-        self.teaching_materials.add(
-            documents=[content],
-            metadatas=[metadata_obj],
-            ids=[f"{topic}_{int(datetime.now().timestamp())}"]
+        document = Document(
+            page_content=content,
+            metadata={
+                "topic": topic,
+                "created_at": int(datetime.now().timestamp()),
+                **metadata
+            }
         )
+        
+        self.teaching_materials.add_documents([document])
 
     def search_hidden_values(self, problem_id: str, query: str, limit: int = 5) -> Dict[str, Any]:
         """Search for hidden values specific to a problem."""
-        # Query with where filter to match problem_id
-        results = self.hidden_values.query(
-            query_texts=[query],
-            where={"problem_id": problem_id},
-            n_results=1  # Original code only returns the best match
+        # Create filter for specific problem_id
+        filter_dict = {"problem_id": problem_id}
+        
+        # Perform similarity search with metadata filter
+        results = self.hidden_values.similarity_search_with_score(
+            query,
+            k=1,  # Original code only returns the best match
+            filter=filter_dict
         )
         
-        # Format results to match the original implementation
-        if results and results['metadatas'] and results['metadatas'][0]:
-            # Extract hidden_values from metadata to match original format
-            return results['metadatas'][0][0].get('metadata', {}).get('hidden_values', {})
+        if results:
+            doc, score = results[0]
+            # Return hidden_values from metadata
+            return doc.metadata.get("hidden_values", {})
         return {}
+
+    def search_problems(self, query: str, limit: int = 5) -> List[Dict[str, Any]]:
+        """Search for problems similar to the query."""
+        # Perform similarity search
+        results = self.problems.similarity_search_with_score(
+            query,
+            k=limit
+        )
+        
+        # Format results
+        formatted_results = []
+        for doc, score in results:
+            formatted_results.append({
+                "id": doc.metadata.get("problem_id", ""),
+                "text": doc.page_content,
+                "metadata": {k: v for k, v in doc.metadata.items() if k not in ["problem_id", "created_at"]},
+                "similarity_score": 1 - (score / 2)  # Convert distance to similarity score
+            })
+        
+        return formatted_results
+
+    def find_similar_problems_by_id(self, problem_id: str, limit: int = 5) -> List[Dict[str, Any]]:
+        """Find problems similar to the given problem ID."""
+        # Get the problem document
+        filter_dict = {"problem_id": problem_id}
+        results = self.problems.similarity_search_with_score(
+            "",  # Empty query to get exact match
+            k=1,
+            filter=filter_dict
+        )
+        
+        if not results:
+            return []
+            
+        # Use the content of the found problem as query
+        doc, _ = results[0]
+        query_text = doc.page_content
+        
+        # Search for similar problems excluding the original
+        similar_results = self.problems.similarity_search_with_score(
+            query_text,
+            k=limit + 1  # +1 to account for the original problem
+        )
+        
+        # Format and filter results
+        formatted_results = []
+        for doc, score in similar_results:
+            # Skip the original problem
+            if doc.metadata.get("problem_id") == problem_id:
+                continue
+                
+            formatted_results.append({
+                "id": doc.metadata.get("problem_id", ""),
+                "text": doc.page_content,
+                "metadata": {k: v for k, v in doc.metadata.items() if k not in ["problem_id", "created_at"]},
+                "similarity_score": 1 - (score / 2)  # Convert distance to similarity score
+            })
+        
+        return formatted_results[:limit]
+
+    def get_problem_topic(self, problem_id: str) -> Dict[str, Any]:
+        """Get the topic of a specific problem."""
+        filter_dict = {"problem_id": problem_id}
+        results = self.problems.similarity_search_with_score(
+            "",  # Empty query to get exact match
+            k=1,
+            filter=filter_dict
+        )
+        
+        if results:
+            doc, _ = results[0]
+            return {
+                "topic": doc.metadata.get("topic", ""),
+                "subject": doc.metadata.get("subject", "")
+            }
+        return {"topic": "", "subject": ""}
 
     def search_teaching_materials(self, query: str, topic: Optional[str] = None, limit: int = 3) -> List[Dict[str, Any]]:
         """Search for relevant teaching materials."""
-        # Build where clause if topic is provided
-        where_clause = {"topic": topic} if topic else None
+        # Create filter if topic is provided
+        filter_dict = {"topic": topic} if topic else None
         
-        # Query the collection
-        results = self.teaching_materials.query(
-            query_texts=[query],
-            where=where_clause,
-            n_results=limit
+        # Perform similarity search with optional filter
+        results = self.teaching_materials.similarity_search_with_score(
+            query,
+            k=limit,
+            filter=filter_dict
         )
         
-        # Format results to match the original implementation
+        # Format results
         formatted_results = []
-        if results['documents'] and results['documents'][0]:
-            for i in range(len(results['documents'][0])):
-                formatted_results.append({
-                    "content": results['documents'][0][i],
-                    "metadata": results['metadatas'][0][i].get('metadata', {}),
-                    # Convert distance to similarity score (1 - distance for cosine)
-                    "similarity": 1 - results['distances'][0][i] if 'distances' in results and results['distances'][0] else 0.0
-                })
+        for doc, score in results:
+            formatted_results.append({
+                "content": doc.page_content,
+                "metadata": {k: v for k, v in doc.metadata.items() if k not in ["topic", "created_at"]},
+                "similarity": 1 - (score / 2)  # Convert distance to similarity score
+            })
         
         return formatted_results
 
@@ -161,10 +250,18 @@ class StoreHiddenValueRequest(BaseModel):
     content: str
     metadata: Optional[Dict[str, Any]] = {}
 
+class StoreProblemRequest(BaseModel):
+    id: str
+    text: str
+    metadata: Optional[Dict[str, Any]] = {}
+
 class StoreTeachingMaterialRequest(BaseModel):
     topic: str
     content: str
     metadata: Optional[Dict[str, Any]] = {}
+
+class SearchResponse(BaseModel):
+    results: List[Dict[str, Any]]
 
 # Endpoints
 @app.post("/store_hidden_value")
@@ -176,6 +273,33 @@ async def store_hidden_value(request: StoreHiddenValueRequest):
         metadata=request.metadata
     )
     return {"message": "Hidden value stored successfully"}
+
+@app.post("/problems/")
+async def store_problem(request: StoreProblemRequest):
+    """Store a problem in the vector database."""
+    vector_db.store_problem(
+        problem_id=request.id,
+        content=request.text,
+        metadata=request.metadata
+    )
+    return {"message": "Problem stored successfully"}
+
+@app.get("/problems/{problem_id}/similar")
+async def get_similar_problems(problem_id: str, limit: int = 5):
+    """Find problems similar to the given problem ID."""
+    results = vector_db.find_similar_problems_by_id(problem_id, limit)
+    return {"results": results}
+
+@app.get("/problems/{problem_id}/topic")
+async def get_problem_topic(problem_id: str):
+    """Get the topic of a specific problem."""
+    return vector_db.get_problem_topic(problem_id)
+
+@app.post("/search")
+async def search_problems(query: str, n_results: int = 5):
+    """Search for problems similar to the query."""
+    results = vector_db.search_problems(query, n_results)
+    return results
 
 @app.post("/store_teaching_material")
 async def store_teaching_material(request: StoreTeachingMaterialRequest):
