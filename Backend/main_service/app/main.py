@@ -5,7 +5,7 @@ import httpx
 import os
 from datetime import datetime
 from fastapi.middleware.cors import CORSMiddleware
-from .Modules.Conversation.conversation_service import ConversationService
+from .conversation_service import ConversationService
 from dotenv import load_dotenv
 
 load_dotenv()

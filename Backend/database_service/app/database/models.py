@@ -27,6 +27,7 @@ class Question(Base):
     teacher_instructions = Column(Text)
     subject = Column(String)
     topic = Column(String)
+    image_url = Column(String, nullable=True)
 
     tests = relationship("Test", secondary="test_questions", back_populates="questions")
 
