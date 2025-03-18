@@ -1,6 +1,6 @@
 import httpx
 from typing import Dict, Any, Optional, List
-from datetime import datetime
+from datetime import datetime, UTC
 import json
 from redis import Redis
 
@@ -31,7 +31,7 @@ class ConversationService:
             "user_id": user_id,
             "test_code": test_code,
             "status": "in_progress",
-            "start_time": datetime.utcnow().isoformat(),
+            "start_time": datetime.now(UTC).isoformat(),
             "total_questions": total_questions,
             "current_question": 0,
             "completed_questions": [],
@@ -59,7 +59,7 @@ class ConversationService:
         if not session_data:
             session_data = json.dumps({
                 "chat_history": [],
-                "start_time": datetime.utcnow().isoformat(),
+                "start_time": datetime.now(UTC).isoformat(),
                 "hints_used": 0,
                 "student_answer": None,
                 "is_correct": None,
@@ -72,7 +72,7 @@ class ConversationService:
         session_data["chat_history"].append({
             "role": "user",
             "content": query,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(UTC).isoformat()
         })
         
         # Get LLM response
@@ -99,7 +99,7 @@ class ConversationService:
         session_data["chat_history"].append({
             "role": "assistant",
             "content": llm_response,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(UTC).isoformat()
         })
         
         # Increment hints used if this was a hint request
@@ -131,7 +131,7 @@ class ConversationService:
         
         # Update session data
         session_data["student_answer"] = answer
-        session_data["end_time"] = datetime.utcnow().isoformat()
+        session_data["end_time"] = datetime.now(UTC).isoformat()
         session_data["time_spent"] = (
             datetime.fromisoformat(session_data["end_time"]) -
             datetime.fromisoformat(session_data["start_time"])
@@ -179,7 +179,7 @@ class ConversationService:
             "user_id": user_id,
             "test_code": test_code,
             "start_time": test_data["start_time"],
-            "end_time": datetime.utcnow().isoformat(),
+            "end_time": datetime.now(UTC).isoformat(),
             "total_time": total_time,
             "total_questions": test_data["total_questions"],
             "correct_answers": correct_answers,

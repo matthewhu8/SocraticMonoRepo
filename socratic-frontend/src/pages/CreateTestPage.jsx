@@ -14,7 +14,8 @@ function CreateTestPage() {
     teacherInstructions: '',
     hintLevel: 'easy',
     subject: '',
-    topic: ''
+    topic: '',
+    image: null
   });
   const [testCode, setTestCode] = useState('');
   const [testName, setTestName] = useState('');
@@ -25,9 +26,41 @@ function CreateTestPage() {
     return Math.random().toString(36).substring(2, 8).toUpperCase();
   };
 
-  // Add a question to our local questions array
-  const addQuestion = (e) => {
+  // Add image upload handler
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setNewQuestion(prev => ({
+        ...prev,
+        image: file
+      }));
+    }
+  };
+
+  // Modify addQuestion to handle image upload
+  const addQuestion = async (e) => {
     e.preventDefault();
+    
+    let imageUrl = null;
+    if (newQuestion.image) {
+      const formData = new FormData();
+      formData.append('image', newQuestion.image);
+      
+      try {
+        const response = await fetch('http://localhost:8000/upload-image', {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          imageUrl = data.image_url;
+        }
+      } catch (error) {
+        console.error('Error uploading image:', error);
+      }
+    }
+
     // Format question according to the expected structure
     const formattedQuestion = {
       public_question: newQuestion.publicQuestion,
@@ -37,7 +70,8 @@ function CreateTestPage() {
       teacher_instructions: newQuestion.teacherInstructions || '',
       hint_level: newQuestion.hintLevel || 'easy',
       subject: newQuestion.subject || '',
-      topic: newQuestion.topic || ''
+      topic: newQuestion.topic || '',
+      image_url: imageUrl
     };
 
     setQuestions(prev => [...prev, formattedQuestion]);
@@ -51,7 +85,8 @@ function CreateTestPage() {
       teacherInstructions: '',
       hintLevel: 'easy',
       subject: '',
-      topic: ''
+      topic: '',
+      image: null
     });
   };
 
@@ -125,6 +160,7 @@ function CreateTestPage() {
             newQuestion={newQuestion}
             setNewQuestion={setNewQuestion}
             onSubmit={addQuestion}
+            onImageUpload={handleImageUpload}
           />
         </div>
         

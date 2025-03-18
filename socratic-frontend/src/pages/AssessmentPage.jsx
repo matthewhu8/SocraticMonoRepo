@@ -7,7 +7,6 @@ function AssessmentPage() {
   const [username, setUsername] = useState('');
   const [assessmentHistory, setAssessmentHistory] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -143,10 +142,6 @@ function AssessmentPage() {
             <div className="loading-state">
               <div className="loading-spinner"></div>
               <p>Loading your assessment history...</p>
-            </div>
-          ) : error ? (
-            <div className="error-message">
-              <p>Unable to load assessment history. Please try again later.</p>
             </div>
           ) : assessmentHistory.length === 0 ? (
             <div className="empty-state">

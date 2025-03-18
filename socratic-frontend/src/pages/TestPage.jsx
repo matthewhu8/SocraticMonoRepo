@@ -82,7 +82,7 @@ function TestPage() {
       });
       setQuestionResults(initialResults);
     }
-  }, [testData]);
+  }, [testData, testStartTime]);
 
   // Update question tracking when navigating questions
   useEffect(() => {
@@ -97,7 +97,7 @@ function TestPage() {
         }
       }));
     }
-  }, [currentQuestionIndex]);
+  }, [currentQuestionIndex, questionResults]);
 
   // Get current question data
   const getCurrentQuestion = () => {
@@ -494,6 +494,25 @@ function TestPage() {
 
         <DebugPanel />
       </div>
+    </div>
+  );
+}
+
+function QuestionSection({ question, onAnswer, isAnswered }) {
+  return (
+    <div className="question-section">
+      <h3>Question {question.question_number}</h3>
+      <p>{question.question_text}</p>
+      {question.image_url && (
+        <div className="question-image">
+          <img 
+            src={question.image_url} 
+            alt="Question" 
+            style={{ maxWidth: '100%', marginTop: '10px' }} 
+          />
+        </div>
+      )}
+      {/* ... rest of the question section ... */}
     </div>
   );
 }
