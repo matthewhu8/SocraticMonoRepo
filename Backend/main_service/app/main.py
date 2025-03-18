@@ -6,7 +6,6 @@ import os
 from datetime import datetime
 from fastapi.middleware.cors import CORSMiddleware
 from .Modules.Conversation.conversation_service import ConversationService
-from .Modules.Problem.problem_service import ProblemService
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -40,6 +39,13 @@ class ChatQuery(BaseModel):
     question_index: Optional[int] = None
     user_id: Optional[str] = "anonymous"
 
+class TeachingMaterial(BaseModel):
+    topic: str
+    subject: str
+    source: str    
+    content: str
+
+
 class TestData(BaseModel):
     name: str
     code: str
@@ -69,10 +75,6 @@ convo_service = ConversationService(
     llm_service_url=LLM_SERVICE_URL,
     database_service_url=DATABASE_SERVICE_URL
 )
-problem_service = ProblemService(
-    database_service_url=DATABASE_SERVICE_URL,
-    vector_service_url=VECTOR_SERVICE_URL
-)
 
 @app.get("/health")
 async def health_check():
@@ -93,6 +95,24 @@ async def chat(query: ChatQuery):
         return {"response": response}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+@app.post("/store_problem")
+async def store_problem(teaching_material: TeachingMaterial):
+    """Store a problem in the vector database."""
+    async with httpx.AsyncClient() as client:
+        try:
+            await client.post(
+                f"{VECTOR_SERVICE_URL}/store_teaching_material",
+                json={
+                    "topic": teaching_material.topic,
+                    "subject": teaching_material.subject,
+                    "source": teaching_material.source,
+                    "content": teaching_material.content
+                }
+            )
+            return {"message": "Teaching material stored successfully"}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/tests", response_model=TestResponse)
 async def create_test(test: TestCreate):
@@ -113,8 +133,13 @@ async def create_test(test: TestCreate):
             for idx, question in enumerate(test.questions):
                 # Create question in database
                 question_response = await client.post(
-                    f"{DATABASE_SERVICE_URL}/questions",
-                    json=question.dict()
+                    f"{DATABASE_SERVICE_URL}/create-question",
+                    json={"public_question": question.public_question,
+                           "hidden_values": question.hidden_values,
+                           "answer": question.answer,
+                           "teacher_instructions": question.teacher_instructions, 
+                           "subject": question.subject, 
+                           "topic": question.topic}
                 )
                 question_response.raise_for_status()
                 question_data = question_response.json()
@@ -130,12 +155,12 @@ async def create_test(test: TestCreate):
                     }
                 )
                 
-                # Store embedding in vector service
+                # Store entire problem in vector service
                 await client.post(
-                    f"{VECTOR_SERVICE_URL}/store_hidden_value",
+                    f"{VECTOR_SERVICE_URL}/problems/",
                     json={
-                        "problem_id": f"{test.code}_{question_id}",
-                        "content": question.public_question,
+                        "problem_id": f"{test_id}_{question_id}",
+                        "public_question": question.public_question,
                         "metadata": {
                             "test_code": test.code,
                             "question_id": question_id,
@@ -146,6 +171,16 @@ async def create_test(test: TestCreate):
                         }
                     }
                 )
+
+                # store individual hidden values in vector service
+                for hidden_value in question.hidden_values:
+                    await client.post(
+                        f"{VECTOR_SERVICE_URL}/store_hidden_value",
+                        json={
+                            "problem_id": f"{test_id}_{question_id}",
+                            "hidden_value": hidden_value
+                        }
+                    )
                 
                 questions.append(question_data)
             
@@ -171,26 +206,14 @@ async def get_test(code: str):
     """Get a test by its code."""
     async with httpx.AsyncClient() as client:
         try:
-            # Get test from database
-            test_response = await client.get(f"{DATABASE_SERVICE_URL}/tests")
+            # Get test from database - now includes questions
+            test_response = await client.get(f"{DATABASE_SERVICE_URL}/tests/by-code/{code}")
             test_response.raise_for_status()
-            tests = test_response.json()
+            test = test_response.json()
             
-            # Find test by code
-            test = next((t for t in tests if t["code"] == code), None)
             if not test:
                 raise HTTPException(status_code=404, detail="Test not found")
-            
-            # Get questions for this test
-            questions_response = await client.get(
-                f"{DATABASE_SERVICE_URL}/test-questions",
-                params={"test_id": test["id"]}
-            )
-            questions_response.raise_for_status()
-            questions = questions_response.json()
-            
-            # Add questions to response
-            test["questions"] = questions
+        
             
             return test
             
@@ -204,23 +227,16 @@ async def get_question(code: str, index: int):
     """Get a specific question from a test."""
     async with httpx.AsyncClient() as client:
         try:
-            # Get test and questions
-            test_response = await client.get(f"{DATABASE_SERVICE_URL}/tests")
+            # Get test with questions already included
+            test_response = await client.get(f"{DATABASE_SERVICE_URL}/tests/by-code/{code}")
             test_response.raise_for_status()
-            tests = test_response.json()
+            test = test_response.json()
             
-            # Find test by code
-            test = next((t for t in tests if t["code"] == code), None)
             if not test:
                 raise HTTPException(status_code=404, detail="Test not found")
             
-            # Get questions for this test
-            questions_response = await client.get(
-                f"{DATABASE_SERVICE_URL}/test-questions",
-                params={"test_id": test["id"]}
-            )
-            questions_response.raise_for_status()
-            questions = questions_response.json()
+            # Get questions from the test response
+            questions = test["questions"]
             
             # Get specific question
             if index < 0 or index >= len(questions):
