@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
 import os
-from VectorDatabase import vector_db
+from .VectorDatabase import vector_db
 
 app = FastAPI(title="Vector Service")
 
@@ -30,7 +30,7 @@ class StoreHiddenValueRequest(BaseModel):
 
 class StoreProblemRequest(BaseModel):
     problem_id: str
-    text: str
+    public_question: str
     metadata: Optional[Dict[str, Any]] = {}
 
 class StoreTeachingMaterialRequest(BaseModel):
@@ -45,9 +45,10 @@ class SearchResponse(BaseModel):
 @app.post("/problems/")
 async def store_problem(request: StoreProblemRequest):
     """Store a problem in the vector database."""
+    print("storing a problem in vector service", request.public_question)
     vector_db.store_problem(
-        problem_id=request.id,
-        content=request,
+        problem_id=request.problem_id,
+        content=request.public_question,
         metadata=request.metadata
     )
     return {"message": "Problem stored successfully"}
