@@ -24,11 +24,11 @@ class Question(Base):
     public_question = Column(Text, nullable=False)
     hidden_values = Column(JSON, nullable=False)
     answer = Column(Text, nullable=False)
+    formula = Column(Text)
     teacher_instructions = Column(Text)
+    hint_level = Column(String)
     subject = Column(String)
     topic = Column(String)
-    image_url = Column(String, nullable=True)
-
     tests = relationship("Test", secondary="test_questions", back_populates="questions")
 
 class TestResult(Base):

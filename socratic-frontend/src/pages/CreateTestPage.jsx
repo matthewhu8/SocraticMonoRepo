@@ -7,15 +7,13 @@ function CreateTestPage() {
   const [questions, setQuestions] = useState([]);
   const [newQuestion, setNewQuestion] = useState({
     publicQuestion: '',
-    hiddenValuesRaw: '',
     hiddenValues: {},
     answer: '',
     formula: '',
     teacherInstructions: '',
     hintLevel: 'easy',
     subject: '',
-    topic: '',
-    image: null
+    topic: ''
   });
   const [testCode, setTestCode] = useState('');
   const [testName, setTestName] = useState('');
@@ -26,91 +24,70 @@ function CreateTestPage() {
     return Math.random().toString(36).substring(2, 8).toUpperCase();
   };
 
-  // Add image upload handler
-  const handleImageUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setNewQuestion(prev => ({
-        ...prev,
-        image: file
-      }));
-    }
-  };
-
-  // Modify addQuestion to handle image upload
   const addQuestion = async (e) => {
     e.preventDefault();
     
-    let imageUrl = null;
-    if (newQuestion.image) {
-      const formData = new FormData();
-      formData.append('image', newQuestion.image);
-      
-      try {
-        const response = await fetch('http://localhost:8000/upload-image', {
-          method: 'POST',
-          body: formData
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          imageUrl = data.image_url;
-        }
-      } catch (error) {
-        console.error('Error uploading image:', error);
-      }
-    }
-
     // Format question according to the expected structure
     const formattedQuestion = {
       public_question: newQuestion.publicQuestion,
       hidden_values: newQuestion.hiddenValues,
-      answer: newQuestion.answer,
+      answer: String(newQuestion.answer),
       formula: newQuestion.formula || '',
       teacher_instructions: newQuestion.teacherInstructions || '',
       hint_level: newQuestion.hintLevel || 'easy',
       subject: newQuestion.subject || '',
-      topic: newQuestion.topic || '',
-      image_url: imageUrl
+      topic: newQuestion.topic || ''
     };
 
     setQuestions(prev => [...prev, formattedQuestion]);
     // Reset form for next question
     setNewQuestion({
       publicQuestion: '',
-      hiddenValuesRaw: '',
       hiddenValues: {},
       answer: '',
       formula: '',
       teacherInstructions: '',
       hintLevel: 'easy',
       subject: '',
-      topic: '',
-      image: null
+      topic: ''
     });
   };
 
   // Send the test data to the backend endpoint
   const createTest = async () => {
     const finalTestCode = testCode.trim() !== '' ? testCode : generateTestCode();
+    
+    // Create properly structured test data object
     const testData = {
-      code: finalTestCode,
       name: testName,
-      questions: questions,
+      code: finalTestCode,
+      questions: questions
     };
+
+    // Add console log to inspect the data being sent
+    console.log("Sending test data to backend:", {
+      testData: testData,
+      jsonString: JSON.stringify(testData, null, 2)
+    });
 
     try {
       const response = await fetch('http://localhost:8000/tests', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(testData),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(testData)
       });
 
+      // Log response status
+      console.log("Response status:", response.status);
+      
       if (response.ok) {
         alert(`Test created successfully! Test code: ${finalTestCode}`);
         setTestSubmitted(true);
       } else {
         const errorData = await response.json();
+        console.log("Error response:", errorData);
         alert(`Failed to create test: ${errorData.detail || 'Unknown error'}`);
       }
     } catch (error) {
@@ -160,7 +137,6 @@ function CreateTestPage() {
             newQuestion={newQuestion}
             setNewQuestion={setNewQuestion}
             onSubmit={addQuestion}
-            onImageUpload={handleImageUpload}
           />
         </div>
         
