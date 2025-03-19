@@ -2,8 +2,8 @@ from typing import List, Dict, Any, Optional
 import os
 from datetime import datetime
 from threading import Lock
-from langchain_community.embeddings import SentenceTransformerEmbeddings
-from langchain_community.vectorstores import Chroma
+from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_chroma import Chroma
 from langchain.schema import Document
 
 # Settings
@@ -32,7 +32,7 @@ class VectorDatabase:
                 if not self._initialized:
                     try:
                         # Initialize embedding function
-                        self.embeddings = SentenceTransformerEmbeddings(
+                        self.embeddings = HuggingFaceEmbeddings(
                             model_name=MODEL_NAME
                         )
                         
