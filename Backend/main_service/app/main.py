@@ -1,18 +1,19 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, File, UploadFile, Form
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
 import httpx
 import os
 from datetime import datetime
 from fastapi.middleware.cors import CORSMiddleware
-from conversation_service import ConversationService
+from .conversation_service import ConversationService
 from dotenv import load_dotenv
+import json
 
 load_dotenv()
 
 # Service URLs from environment variables
-DATABASE_SERVICE_URL = os.getenv("DATABASE_SERVICE_URL", "http://database-service:8000")
-VECTOR_SERVICE_URL = os.getenv("VECTOR_SERVICE_URL", "http://vector-service:8000")
+DATABASE_SERVICE_URL = os.getenv("DATABASE_SERVICE_URL", "http://localhost:8001")
+VECTOR_SERVICE_URL = os.getenv("VECTOR_SERVICE_URL", "http://localhost:8002")
 LLM_SERVICE_URL = os.getenv("LLM_SERVICE_URL", "http://localhost:8003")
 
 app = FastAPI(title="Socratic Main Service")
@@ -55,7 +56,9 @@ class Question(BaseModel):
     public_question: str
     hidden_values: Optional[Dict[str, Any]] = {}
     answer: str
+    formula: Optional[str] = None
     teacher_instructions: Optional[str] = None
+    hint_level: Optional[str] = None
     subject: Optional[str] = None
     topic: Optional[str] = None
 
@@ -96,9 +99,9 @@ async def chat(query: ChatQuery):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
-@app.post("/store_problem")
-async def store_problem(teaching_material: TeachingMaterial):
-    """Store a problem in the vector database."""
+@app.post("/store-teaching-material")
+async def store_teaching_material(teaching_material: TeachingMaterial):
+    """Store a teaching material in the vector database."""
     async with httpx.AsyncClient() as client:
         try:
             await client.post(
@@ -117,6 +120,8 @@ async def store_problem(teaching_material: TeachingMaterial):
 @app.post("/tests", response_model=TestResponse)
 async def create_test(test: TestCreate):
     """Create a new test with questions and store embeddings."""
+    print("hello world")
+    print(test)
     async with httpx.AsyncClient() as client:
         try:
             # 1. Create test in database
@@ -132,20 +137,26 @@ async def create_test(test: TestCreate):
             questions = []
             for idx, question in enumerate(test.questions):
                 # Create question in database
+                print("storing a test question in database", question.public_question)
                 question_response = await client.post(
                     f"{DATABASE_SERVICE_URL}/create-question",
-                    json={"public_question": question.public_question,
-                           "hidden_values": question.hidden_values,
-                           "answer": question.answer,
-                           "teacher_instructions": question.teacher_instructions, 
-                           "subject": question.subject, 
-                           "topic": question.topic}
+                    json={
+                        "public_question": question.public_question,
+                        "hidden_values": question.hidden_values,
+                        "answer": question.answer,
+                        "formula": question.formula,
+                        "teacher_instructions": question.teacher_instructions,
+                        "hint_level": question.hint_level,
+                        "subject": question.subject,
+                        "topic": question.topic
+                    }
                 )
                 question_response.raise_for_status()
                 question_data = question_response.json()
                 question_id = question_data["id"]
                 
                 # Create test-question relationship
+                print("storing a test-question relationship in database", test_id, question_id)
                 await client.post(
                     f"{DATABASE_SERVICE_URL}/test-questions",
                     json={
@@ -156,6 +167,7 @@ async def create_test(test: TestCreate):
                 )
                 
                 # Store entire problem in vector service
+                print("storing an entire problem in vector service", question.public_question)
                 await client.post(
                     f"{VECTOR_SERVICE_URL}/problems/",
                     json={
@@ -174,11 +186,12 @@ async def create_test(test: TestCreate):
 
                 # store individual hidden values in vector service
                 for hidden_value in question.hidden_values:
+                    print("storing one hidden value in vector service as a document", hidden_value, question.hidden_values[hidden_value])
                     await client.post(
                         f"{VECTOR_SERVICE_URL}/store_hidden_value",
                         json={
                             "problem_id": f"{test_id}_{question_id}",
-                            "hidden_value": hidden_value
+                            "hidden_value": f"{hidden_value} = {question.hidden_values[hidden_value]}"
                         }
                     )
                 

@@ -1,7 +1,7 @@
 //// filepath: /Users/matthewhu/Code/SocraticMonoRepo/socratic-frontend/src/components/TeacherQuestionForm.jsx
 import React from 'react';
 
-function TeacherQuestionForm({ newQuestion, setNewQuestion, onSubmit, onImageUpload }) {
+function TeacherQuestionForm({ newQuestion, setNewQuestion, onSubmit }) {
   // Parse hidden values input into an object when it changes
   const handleHiddenValuesChange = (e) => {
     const valuesString = e.target.value;
@@ -145,27 +145,6 @@ function TeacherQuestionForm({ newQuestion, setNewQuestion, onSubmit, onImageUpl
             placeholder="e.g. basic_arithmetic"
           />
         </label>
-      </div>
-      
-      <div className="form-group">
-        <label>
-          Question Image (optional):
-          <input
-            type="file"
-            accept="image/*"
-            onChange={onImageUpload}
-            className="form-input"
-          />
-        </label>
-        {newQuestion.image && (
-          <div className="image-preview">
-            <img 
-              src={URL.createObjectURL(newQuestion.image)} 
-              alt="Preview" 
-              style={{ maxWidth: '200px', marginTop: '10px' }} 
-            />
-          </div>
-        )}
       </div>
       
       <button type="submit" className="add-question-btn">Add Question</button>

@@ -1,38 +1,44 @@
 from fastapi import FastAPI, HTTPException, Depends
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from datetime import datetime
-import json
 
-from .database.database import get_db
-from .database.models import Test, Question, TestQuestion, TestResult, QuestionResult, ChatMessage
+from .database.database import get_db, engine
+from .database.models import Base, Test, Question, TestQuestion, TestResult, QuestionResult, ChatMessage
+
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Database Service")
 
 # Pydantic models for request/response
-class TestBase(BaseModel):
+class OrmBaseModel(BaseModel):
+    class Config:
+        orm_mode = True
+
+class TestBase(OrmBaseModel):
     test_name: Optional[str] = None
     code: str
 
 class TestCreate(TestBase):
     questions: List[Dict[str, Any]]
 
-class QuestionBase(BaseModel):
+class QuestionBase(OrmBaseModel):
     public_question: str
     hidden_values: Dict[str, Any]
     answer: str
+    formula: Optional[str] = None
     teacher_instructions: Optional[str] = None
+    hint_level: Optional[str] = None
     subject: Optional[str] = None
     topic: Optional[str] = None
 
-
-class TestQuestionCreate(BaseModel):
+class TestQuestionCreate(OrmBaseModel):
     test_id: int
     question_id: int
     position: int
 
-class TestResultBase(BaseModel):
+class TestResultBase(OrmBaseModel):
     test_code: str
     username: str
     score: Optional[float] = None
@@ -40,7 +46,7 @@ class TestResultBase(BaseModel):
     correct_questions: Optional[int] = None
     end_time: Optional[datetime] = None
 
-class QuestionResultBase(BaseModel):
+class QuestionResultBase(OrmBaseModel):
     question_id: int
     student_answer: Optional[str] = None
     isCorrect: Optional[bool] = False
@@ -48,42 +54,28 @@ class QuestionResultBase(BaseModel):
     start_time: datetime
     end_time: Optional[datetime] = None
 
-class ChatMessageBase(BaseModel):
+class ChatMessageBase(OrmBaseModel):
     sender: str
     content: str
     timestamp: Optional[datetime] = None
 
-# Response models; INCOMPLETE
+# Response models
 class ChatMessageResponse(ChatMessageBase):
     id: int
     question_result_id: int
 
-    class Config:
-        orm_mode = True
-
-# INCOMPLETE
 class QuestionResultResponse(QuestionResultBase):
     id: int
     test_result_id: int
     chat_messages: List[ChatMessageResponse] = []
 
-    class Config:
-        orm_mode = True
-        
-# INCOMPLETE
 class TestResultResponse(TestResultBase):
     id: int
     start_time: datetime
     question_results: List[QuestionResultResponse] = []
 
-    class Config:
-        orm_mode = True
-
 class QuestionResponse(QuestionBase):
     id: int
-
-    class Config:
-        orm_mode = True
 
 class TestResponse(TestBase):
     id: int
@@ -91,18 +83,25 @@ class TestResponse(TestBase):
     code: str
     questions: List[QuestionResponse] = []
 
-    class Config:
-        orm_mode = True
-
 # Test endpoints
 @app.post("/tests", response_model=TestResponse)
 async def create_test(test: TestBase, db: Session = Depends(get_db)):
-    db_test = Test(test_name=test.test_name, code=test.code)
-    db.add(db_test)
-    db.commit()
-    db.refresh(db_test)
-    return db_test
-
+    """Create a new test entry in the database."""
+    try:
+        print(f"Creating test with name: {test.test_name}, code: {test.code}")
+        
+        # Create the test
+        db_test = Test(test_name=test.test_name, code=test.code)
+        db.add(db_test)
+        db.commit()
+        db.refresh(db_test)
+        
+        print(f"Test created with ID: {db_test.id}")
+        return db_test
+    except Exception as e:
+        db.rollback()
+        print(f"Error creating test: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error creating test: {str(e)}")
 
 @app.get("/tests/by-code/{code}", response_model=TestResponse)
 async def get_test_by_code(code: str, db: Session = Depends(get_db)):
@@ -172,11 +171,14 @@ async def get_test(test_id: int, db: Session = Depends(get_db)):
 # Question endpoints
 @app.post("/create-question", response_model=QuestionResponse)
 async def create_question(question: QuestionBase, db: Session = Depends(get_db)):
+    print(question.public_question)
     db_question = Question(
         public_question=question.public_question,
         hidden_values=question.hidden_values,
         answer=question.answer,
+        formula=question.formula,
         teacher_instructions=question.teacher_instructions,
+        hint_level=question.hint_level,
         subject=question.subject,
         topic=question.topic
     )
@@ -190,7 +192,9 @@ async def create_question(question: QuestionBase, db: Session = Depends(get_db))
         public_question=db_question.public_question,
         hidden_values=db_question.hidden_values,
         answer=db_question.answer,
+        formula=db_question.formula,
         teacher_instructions=db_question.teacher_instructions,
+        hint_level=db_question.hint_level,
         subject=db_question.subject,
         topic=db_question.topic
     )
