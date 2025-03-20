@@ -34,11 +34,11 @@ class ChatResponse(BaseModel):
     response: str
 
 class ChatQuery(BaseModel):
-    problem_id: int
+    test_id: int
+    test_code: str
+    question_id: int
     query: str
-    test_code: Optional[str] = None
-    question_index: Optional[int] = None
-    user_id: Optional[str] = "anonymous"
+    user_id: int
 
 class TeachingMaterial(BaseModel):
     topic: str
@@ -67,7 +67,7 @@ class TestCreate(BaseModel):
     code: str
     questions: List[Question]
 
-class TestResponse(BaseModel):
+class TestResponse(BaseModel): # questions now contain 'id' field as well
     id: int
     test_name: str
     code: str
@@ -87,13 +87,14 @@ async def health_check():
 @app.post("/chat")
 async def chat(query: ChatQuery):
     """Process a chat query"""
+    print("chat query recieved in the backend", query)
     try:
         response = await convo_service.process_query(
             query.query, 
-            query.problem_id, 
             query.user_id, 
             query.test_code, 
-            query.question_index
+            query.question_id,
+            query.test_id
         )
         return {"response": response}
     except Exception as e:

@@ -16,13 +16,13 @@ class ConversationService:
         self.database_service_url = database_service_url
         self.redis = Redis.from_url(redis_url, decode_responses=True)
     
-    def _get_session_key(self, user_id: str, test_code: str, question_index: int) -> str:
+    def _get_session_key(self, user_id: str, test_id: int, question_id: int) -> str:
         """Generate Redis key for a specific test session."""
-        return f"test_session:{user_id}:{test_code}:{question_index}"
+        return f"test_session:{user_id}:{test_id}:{question_id}"
     
     def _get_test_key(self, user_id: str, test_code: str) -> str:
         """Generate Redis key for overall test data."""
-        return f"test:{user_id}:{test_code}"
+        return f"test:{user_id}:{test_code}" 
     
     async def start_test(self, user_id: str, test_code: str, total_questions: int) -> Dict:
         """Initialize a new test session."""
@@ -47,44 +47,51 @@ class ConversationService:
         query: str, 
         user_id: str,
         test_code: str,
-        question_index: int,
-        problem_id: int
+        question_id: int,
+        test_id: int
     ) -> str:
         """Process a user query and return a response."""
-        session_key = self._get_session_key(user_id, test_code, question_index)
+        print("processing query", query, "for user", user_id, "test", test_id, "question", question_id, "test code", test_code)
+        session_key = self._get_session_key(user_id, test_id, question_id)
         # test_key = self._get_test_key(user_id, test_code)
-        
+        print("session key", session_key)
         # Get or initialize question session
         session_data = self.redis.get(session_key)
+        print("session data", session_data)
+
         if not session_data:
+            print("no session data found, initializing new session")
             session_data = json.dumps({
                 "chat_history": [],
                 "start_time": datetime.now(UTC).isoformat(),
                 "hints_used": 0,
                 "student_answer": None,
-                "is_correct": None,
-                "problem_id": problem_id
+                "is_correct": False,
+                "question_id": question_id,
+                "test_id": test_id
             })
         
         session_data = json.loads(session_data)
-        
+                
         # Add user message to chat history
+        print("adding user message to chat history")
         session_data["chat_history"].append({
             "role": "user",
             "content": query,
             "timestamp": datetime.now(UTC).isoformat()
         })
-        
         # Get LLM response
+        print("making request to llm service")
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 f"{self.llm_service_url}/generate",
                 json={
                     "query": query,
                     "context": {
-                        "problem_id": problem_id,
                         "test_code": test_code,
-                        "question_index": question_index,
+                        "test_id": test_id,
+                        "question_id": question_id,
+                        "user_id": user_id,
                         "conversation_history": session_data["chat_history"]
                     }
                 }

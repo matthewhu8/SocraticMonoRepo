@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import ProblemDisplay from '../components/ProblemDisplay';
 import ChatBox from '../components/ChatBox';
@@ -16,6 +16,10 @@ function TestPage() {
   const [testCompleted, setTestCompleted] = useState(false);
   const [questionResults, setQuestionResults] = useState({});
   const [testStartTime, setTestStartTime] = useState(null);
+
+  // Memoize key values used across multiple useEffects to maintain referential stability
+  const memoizedQuestionResults = useMemo(() => questionResults, [JSON.stringify(questionResults)]);
+  const memoizedTestData = useMemo(() => testData, [testData?.id, testData?.questions?.length]);
 
   // Fetch test data when component mounts
   useEffect(() => {
@@ -65,48 +69,62 @@ function TestPage() {
 
   // Initialize test tracking when test data is loaded
   useEffect(() => {
-    if (testData && !testStartTime) {
+    if (memoizedTestData && !testStartTime) {
       setTestStartTime(new Date());
-      // Initialize question results
-      const initialResults = {};
-      testData.questions.forEach((_, index) => {
-        initialResults[index] = {
-          startTime: new Date(),
-          endTime: null,
-          answer: null,
-          isCorrect: false,
-          timeSpent: 0,
-          attempts: 0,
-          messages: []
-        };
-      });
-      setQuestionResults(initialResults);
+      
+      // Check if question results are already initialized to prevent re-initialization
+      const areResultsInitialized = Object.keys(memoizedQuestionResults).length > 0;
+      
+      if (!areResultsInitialized) {
+        // Initialize question results
+        const initialResults = {};
+        memoizedTestData.questions.forEach((_, index) => {
+          initialResults[index] = {
+            startTime: new Date(),
+            endTime: null,
+            answer: null,
+            isCorrect: false,
+            timeSpent: 0,
+            attempts: 0,
+            messages: []
+          };
+        });
+        setQuestionResults(initialResults);
+      }
     }
-  }, [testData, testStartTime]);
+  // Use memoized values in dependency array
+  }, [memoizedTestData, testStartTime, memoizedQuestionResults]);
 
   // Update question tracking when navigating questions
   useEffect(() => {
-    if (questionResults[currentQuestionIndex]) {
-      // Mark previous question as ended
-      setQuestionResults(prev => ({
-        ...prev,
-        [currentQuestionIndex]: {
-          ...prev[currentQuestionIndex],
-          endTime: new Date(),
-          timeSpent: (new Date() - new Date(prev[currentQuestionIndex].startTime)) / 1000
-        }
-      }));
+    // Only run this effect when we have valid data
+    if (memoizedTestData && memoizedQuestionResults && memoizedQuestionResults[currentQuestionIndex]) {
+      // Add testData check and avoid calling setQuestionResults if not needed
+      const prevTimeSpent = memoizedQuestionResults[currentQuestionIndex].timeSpent || 0;
+      const newTimeSpent = (new Date() - new Date(memoizedQuestionResults[currentQuestionIndex].startTime)) / 1000;
+      
+      // Only update if the time spent has meaningfully changed
+      if (Math.abs(newTimeSpent - prevTimeSpent) > 1) {
+        setQuestionResults(prev => ({
+          ...prev,
+          [currentQuestionIndex]: {
+            ...prev[currentQuestionIndex],
+            endTime: new Date(),
+            timeSpent: newTimeSpent
+          }
+        }));
+      }
     }
-  }, [currentQuestionIndex, questionResults]);
+  // Use memoized values in dependency array
+  }, [currentQuestionIndex, memoizedQuestionResults, memoizedTestData]);
 
-  // Get current question data
-  const getCurrentQuestion = () => {
-    if (!testData || !testData.questions || testData.questions.length === 0) {
+  // Use useMemo to compute currentQuestion only when dependencies change
+  const currentQuestion = useMemo(() => {
+    if (!memoizedTestData || !memoizedTestData.questions || memoizedTestData.questions.length === 0) {
       return null;
     }
     
-    const question = testData.questions[currentQuestionIndex];
-    console.log("Current question data:", question);
+    const question = memoizedTestData.questions[currentQuestionIndex];
     
     // Ensure consistent field access regardless of naming convention
     return {
@@ -120,12 +138,13 @@ function TestPage() {
       hidden_values: question.hidden_values || question.hiddenValues,
       imageUrl: question.imageUrl || question.image_url
     };
-  };
-
-  const currentQuestion = getCurrentQuestion();
+  }, [memoizedTestData, currentQuestionIndex]);
   
   const handleSendMessage = async (text) => {
     const questionId = currentQuestionIndex;
+    
+    // Use the existing currentQuestion variable instead of retrieving it again
+    // This prevents the circular dependency causing infinite loops
     
     // Update message history
     setQuestionResults(prev => ({
@@ -144,15 +163,22 @@ function TestPage() {
     }));
   
     try {
+      // Create payload that matches the ChatQuery model in the backend
+      console.log(testData, "howdy there snooper")
+      const chatPayload = {
+        test_id: testData.id,
+        test_code: testCode,
+        question_id: currentQuestion.id, // Use the existing currentQuestion
+        query: text,
+        user_id: 69  // Placeholder - can be updated with actual user ID later
+      };
+      
+      console.log("Sending chat data to backend:", chatPayload);
+      
       const response = await fetch('http://127.0.0.1:8000/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          problem_id: 1,
-          query: text,
-          test_code: testCode,
-          question_index: currentQuestionIndex,
-        }),
+        body: JSON.stringify(chatPayload),
       });
       
       if (!response.ok) {
