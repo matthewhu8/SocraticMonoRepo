@@ -29,6 +29,7 @@ env/
 .venv/
 env.bak/
 venv.bak/
+.env
 
 # Database
 *.sqlite3
@@ -41,6 +42,10 @@ venv.bak/
 *.pth
 *.onnx
 *.dylib
+model_cache/
+**/model_cache/
+chroma_db/
+**/chroma_db/
 
 # IDE
 .idea/

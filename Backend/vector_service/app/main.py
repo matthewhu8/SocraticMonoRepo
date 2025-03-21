@@ -12,7 +12,7 @@ class HiddenValueRequest(BaseModel):
     problem_id: str
 
 class HiddenValueResponse(BaseModel):
-    hidden_values: Dict[str, Any]
+    hidden_value: str
     has_hidden_values: bool
 
 class MaterialSearchRequest(BaseModel):
@@ -96,8 +96,9 @@ async def search_hidden_values(request: HiddenValueRequest):
         problem_id=request.problem_id,
         query=request.query
     )
+    print("hidden values", hidden_values)
     return HiddenValueResponse(
-        hidden_values=hidden_values,
+        hidden_value=hidden_values[0],
         has_hidden_values=len(hidden_values) > 0
     )
 

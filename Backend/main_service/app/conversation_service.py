@@ -81,7 +81,7 @@ class ConversationService:
             "timestamp": datetime.now(UTC).isoformat()
         })
         # Get LLM response
-        print("making request to llm service")
+        print("making request to llm service") 
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 f"{self.llm_service_url}/generate",

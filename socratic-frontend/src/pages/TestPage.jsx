@@ -170,7 +170,7 @@ function TestPage() {
         test_code: testCode,
         question_id: currentQuestion.id, // Use the existing currentQuestion
         query: text,
-        user_id: 69  // Placeholder - can be updated with actual user ID later
+        user_id: 75  // Placeholder - can be updated with actual user ID later
       };
       
       console.log("Sending chat data to backend:", chatPayload);

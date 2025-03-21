@@ -103,6 +103,7 @@ class VectorDatabase:
 
     def search_hidden_values(self, problem_id: str, query: str, limit: int = 5) -> List[str]:
         """Search for hidden values specific to a problem."""
+        print("searching for hidden values in vector service")
         # Create filter for specific problem_id
         filter_dict = {"problem_id": problem_id}
         
@@ -112,9 +113,19 @@ class VectorDatabase:
             k=1,
             filter=filter_dict
         )
+        print("results", results)
         
-        # Return the hidden values (which are stored as page_content)
-        return [doc.page_content for doc, score in results]
+        # Only return hidden values if the similarity score is high enough
+        # Lower score means higher similarity (it's a distance measure)
+        hidden_values = []
+        for doc, score in results:
+            similarity = 1 - (score / 2)  # Convert distance to similarity score
+            # Only include results with at least 70% similarity
+            if similarity >= 0.50:
+                print(f"Hidden value query: '{query}', Similarity score: {similarity}")
+                hidden_values.append(doc.page_content)
+        
+        return hidden_values
 
     def search_problems(self, query: str, limit: int = 5) -> List[Dict[str, Any]]:
         """Search for problems similar to the query."""
