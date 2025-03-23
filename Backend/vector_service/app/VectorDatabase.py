@@ -121,7 +121,7 @@ class VectorDatabase:
         for doc, score in results:
             similarity = 1 - (score / 2)  # Convert distance to similarity score
             # Only include results with at least 70% similarity
-            if similarity >= 0.50:
+            if similarity >= 0.40:
                 print(f"Hidden value query: '{query}', Similarity score: {similarity}")
                 hidden_values.append(doc.page_content)
         
