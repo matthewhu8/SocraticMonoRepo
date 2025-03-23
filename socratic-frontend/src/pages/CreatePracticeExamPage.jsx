@@ -2,12 +2,15 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import '../styles/CreateTestPage.css';
 
-function CreateTestPage() {
+function CreatePracticeExamPage() {
   const [questions, setQuestions] = useState([]);
   const [newQuestion, setNewQuestion] = useState({
     publicQuestion: '',
     hiddenValues: {},
     answer: '',
+    formula: '',
+    teacherInstructions: '',
+    hintLevel: 'easy',
     subject: '',
     topic: ''
   });
@@ -57,10 +60,9 @@ function CreateTestPage() {
       public_question: newQuestion.publicQuestion,
       hidden_values: newQuestion.hiddenValues,
       answer: String(newQuestion.answer),
-      // Add default values for required backend fields that aren't in our form
-      formula: '',
-      teacher_instructions: '',
-      hint_level: 'easy',
+      formula: newQuestion.formula || '',
+      teacher_instructions: newQuestion.teacherInstructions || '',
+      hint_level: newQuestion.hintLevel || 'easy',
       subject: newQuestion.subject || '',
       topic: newQuestion.topic || ''
     };
@@ -82,6 +84,9 @@ function CreateTestPage() {
       publicQuestion: '',
       hiddenValues: {},
       answer: '',
+      formula: '',
+      teacherInstructions: '',
+      hintLevel: 'easy',
       subject: '',
       topic: ''
     });
@@ -96,6 +101,9 @@ function CreateTestPage() {
       publicQuestion: questionToEdit.public_question,
       hiddenValues: questionToEdit.hidden_values,
       answer: questionToEdit.answer,
+      formula: questionToEdit.formula,
+      teacherInstructions: questionToEdit.teacher_instructions,
+      hintLevel: questionToEdit.hint_level,
       subject: questionToEdit.subject,
       topic: questionToEdit.topic
     });
@@ -128,6 +136,9 @@ function CreateTestPage() {
           publicQuestion: '',
           hiddenValues: {},
           answer: '',
+          formula: '',
+          teacherInstructions: '',
+          hintLevel: 'easy',
           subject: '',
           topic: ''
         });
@@ -143,38 +154,32 @@ function CreateTestPage() {
       publicQuestion: '',
       hiddenValues: {},
       answer: '',
+      formula: '',
+      teacherInstructions: '',
+      hintLevel: 'easy',
       subject: '',
       topic: ''
     });
     setHiddenValuesRaw('');
   };
 
-  // Send the test data to the backend endpoint
-  const createTest = async () => {
+  // Send the practice exam data to the backend endpoint
+  const createPracticeExam = async () => {
     if (questions.length === 0) {
-      alert("Please add at least one question to the test.");
+      alert("Please add at least one question to the practice exam.");
       return;
     }
 
     if (!testName.trim()) {
-      alert("Please enter a test name.");
+      alert("Please enter a practice exam name.");
       return;
     }
 
-    const testData = {
+    const examData = {
       name: testName,
       code: testCode || generateTestCode(),
-      isPracticeExam: false,
-      questions: questions.map(q => ({
-        public_question: q.public_question,
-        hidden_values: q.hidden_values,
-        answer: q.answer,
-        formula: q.formula || '',
-        teacher_instructions: q.teacher_instructions || '',
-        hint_level: q.hint_level || 'easy',
-        subject: q.subject || '',
-        topic: q.topic || ''
-      }))
+      isPracticeExam: true,
+      questions: questions
     };
 
     try {
@@ -183,17 +188,17 @@ function CreateTestPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(testData),
+        body: JSON.stringify(examData),
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
-        console.error('Failed to create test:', response.status, errorData);
-        alert(`Failed to create test: ${response.statusText}`);
+        console.error('Failed to create practice exam:', response.status, errorData);
+        alert(`Failed to create practice exam: ${response.statusText}`);
         return;
       }
 
-      console.log('Test created successfully');
+      console.log('Practice exam created successfully');
       setTestSubmitted(true);
       setQuestions([]);
       setTestName('');
@@ -202,40 +207,43 @@ function CreateTestPage() {
         publicQuestion: '',
         hiddenValues: {},
         answer: '',
+        formula: '',
+        teacherInstructions: '',
+        hintLevel: 'basic',
         subject: '',
         topic: ''
       });
     } catch (error) {
       console.error('Error:', error);
-      alert(`Error creating test: ${error.message}`);
+      alert(`Error creating practice exam: ${error.message}`);
     }
   };
 
   return (
     <div className="create-test-container">
       <div className="create-test-header">
-        <h1>Create Test</h1>
-        <p>Add questions and generate a test code for your students</p>
+        <h1>Create Practice Exam</h1>
+        <p>Build an interactive practice exam with AI-powered feedback for your students</p>
       </div>
       
       <div className="content-panel">
         <div className="test-code-section">
-          <h3>Test Information</h3>
+          <h3>Practice Exam Information</h3>
           <div className="input-group">
             <label>
-              Test Name:
+              Practice Exam Name:
               <input
                 type="text"
                 value={testName}
                 onChange={(e) => setTestName(e.target.value)}
-                placeholder="Enter test name"
+                placeholder="Enter practice exam name"
                 required
               />
             </label>
           </div>
           <div className="input-group">
             <label>
-              Test Code (optional, leave blank to auto-generate):
+              Access Code (optional, leave blank to auto-generate):
               <input
                 type="text"
                 value={testCode}
@@ -296,7 +304,47 @@ function CreateTestPage() {
               </label>
             </div>
             
+            <div className="form-group">
+              <label>
+                Formula (optional):<br />
+                <input
+                  type="text"
+                  value={newQuestion.formula || ''}
+                  onChange={(e) => setNewQuestion({ ...newQuestion, formula: e.target.value })}
+                  className="form-input"
+                  placeholder="e.g. sum = x + y"
+                />
+              </label>
+            </div>
+            
+            <div className="form-group">
+              <label>
+                Teacher Instructions (optional):<br />
+                <textarea
+                  value={newQuestion.teacherInstructions || ''}
+                  onChange={(e) => setNewQuestion({ ...newQuestion, teacherInstructions: e.target.value })}
+                  className="form-textarea"
+                  placeholder="Guide students to discover both variables before solving..."
+                />
+              </label>
+            </div>
+            
             <div className="form-row">
+              <div className="form-group form-group-half">
+                <label>
+                  Hint Level:
+                  <select
+                    value={newQuestion.hintLevel || 'easy'}
+                    onChange={(e) => setNewQuestion({ ...newQuestion, hintLevel: e.target.value })}
+                    className="form-select"
+                  >
+                    <option value="easy">Easy</option>
+                    <option value="medium">Medium</option>
+                    <option value="hard">Hard</option>
+                  </select>
+                </label>
+              </div>
+              
               <div className="form-group form-group-half">
                 <label>
                   Subject:
@@ -309,19 +357,19 @@ function CreateTestPage() {
                   />
                 </label>
               </div>
-              
-              <div className="form-group form-group-half">
-                <label>
-                  Topic:
-                  <input
-                    type="text"
-                    value={newQuestion.topic || ''}
-                    onChange={(e) => setNewQuestion({ ...newQuestion, topic: e.target.value })}
-                    className="form-input"
-                    placeholder="e.g. basic_arithmetic"
-                  />
-                </label>
-              </div>
+            </div>
+            
+            <div className="form-group">
+              <label>
+                Topic:
+                <input
+                  type="text"
+                  value={newQuestion.topic || ''}
+                  onChange={(e) => setNewQuestion({ ...newQuestion, topic: e.target.value })}
+                  className="form-input"
+                  placeholder="e.g. basic_arithmetic"
+                />
+              </label>
             </div>
             
             <button type="submit" className={`add-question-btn ${isEditing ? 'editing' : ''}`}>
@@ -340,7 +388,7 @@ function CreateTestPage() {
           {questions.length === 0 ? (
             <div className="empty-state">
               <p>No questions added yet.</p>
-              <p className="hint">Use the form above to add questions to your test.</p>
+              <p className="hint">Use the form above to add questions to your practice exam.</p>
             </div>
           ) : (
             <div className="questions-grid">
@@ -354,8 +402,11 @@ function CreateTestPage() {
                       .join(', ')}
                     </p>
                     <p><strong>Answer:</strong> {q.answer}</p>
+                    {q.formula && <p><strong>Formula:</strong> {q.formula}</p>}
+                    <p><strong>Hint Level:</strong> {q.hint_level}</p>
                     <p><strong>Subject:</strong> {q.subject || 'Not specified'}</p>
                     <p><strong>Topic:</strong> {q.topic || 'Not specified'}</p>
+                    {q.teacher_instructions && <p><strong>Instructions:</strong> {q.teacher_instructions}</p>}
                   </div>
                   <div className="question-actions">
                     <button 
@@ -381,12 +432,12 @@ function CreateTestPage() {
         
         <div className="actions-section">
           {questions.length > 0 && (
-            <button className="create-button" onClick={createTest}>
-              Create Test
+            <button className="create-button" onClick={createPracticeExam}>
+              Create Practice Exam
             </button>
           )}
           {testSubmitted && (
-            <p className="success-message">Test has been submitted successfully!</p>
+            <p className="success-message">Practice exam has been submitted successfully!</p>
           )}
           <Link to="/teachers" className="back-link">Back to Teacher Dashboard</Link>
         </div>
@@ -395,4 +446,4 @@ function CreateTestPage() {
   );
 }
 
-export default CreateTestPage;
+export default CreatePracticeExamPage; 

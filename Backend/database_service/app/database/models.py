@@ -10,6 +10,7 @@ class Test(Base):
     id = Column(Integer, primary_key=True, index=True)
     test_name = Column(String, index=True, nullable=True)
     code = Column(String, unique=True, index=True, nullable=False)
+    isPracticeExam = Column(Boolean, default=False)
     questions = relationship("Question", secondary="test_questions", back_populates="tests")
 
 class TestQuestion(Base):
