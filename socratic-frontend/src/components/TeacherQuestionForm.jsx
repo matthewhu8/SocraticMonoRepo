@@ -1,7 +1,7 @@
 //// filepath: /Users/matthewhu/Code/SocraticMonoRepo/socratic-frontend/src/components/TeacherQuestionForm.jsx
 import React from 'react';
 
-function TeacherQuestionForm({ newQuestion, setNewQuestion, onSubmit }) {
+function TeacherQuestionForm({ newQuestion, setNewQuestion, onSubmit, isEditing }) {
   // Parse hidden values input into an object when it changes
   const handleHiddenValuesChange = (e) => {
     const valuesString = e.target.value;
@@ -147,7 +147,9 @@ function TeacherQuestionForm({ newQuestion, setNewQuestion, onSubmit }) {
         </label>
       </div>
       
-      <button type="submit" className="add-question-btn">Add Question</button>
+      <button type="submit" className={`add-question-btn ${isEditing ? 'editing' : ''}`}>
+        {isEditing ? 'Update Question' : 'Add Question'}
+      </button>
     </form>
   );
 }

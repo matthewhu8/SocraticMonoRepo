@@ -26,7 +26,8 @@ function AssessmentPage() {
             totalQuestions: 20,
             correctAnswers: 17,
             status: 'completed',
-            teacher: 'Dr. Johnson'
+            teacher: 'Dr. Johnson',
+            type: 'test'
           },
           {
             id: 2,
@@ -36,7 +37,8 @@ function AssessmentPage() {
             totalQuestions: 15,
             correctAnswers: 14,
             status: 'completed',
-            teacher: 'Ms. Garcia'
+            teacher: 'Ms. Garcia',
+            type: 'practice-exam'
           },
           {
             id: 3,
@@ -46,7 +48,8 @@ function AssessmentPage() {
             totalQuestions: 25,
             correctAnswers: 19,
             status: 'completed',
-            teacher: 'Prof. Williams'
+            teacher: 'Prof. Williams',
+            type: 'test'
           },
           {
             id: 4,
@@ -56,7 +59,8 @@ function AssessmentPage() {
             totalQuestions: 30,
             correctAnswers: 26,
             status: 'completed',
-            teacher: 'Dr. Smith'
+            teacher: 'Dr. Smith',
+            type: 'practice-exam'
           }
         ];
         
@@ -107,31 +111,44 @@ function AssessmentPage() {
 
       <div className="assessment-content">
         <div className="join-test-section">
-          <h2>Join a Test</h2>
-          <p>Enter your name and the test code provided by your teacher</p>
+          <h2>Join a Test or Practice Exam</h2>
+          <p>Enter the access code provided by your teacher to start an assessment</p>
           
-          <form onSubmit={handleTestCodeSubmit} className="test-code-form">
-            <div className="input-group">
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Your Name"
-                className="username-input"
-                required
-              />
+          <div className="info-box">
+            <div className="info-box-header">
+              <span className="info-icon">ℹ️</span>
+              <h3>Tests vs Practice Exams</h3>
             </div>
-            <div className="input-group">
+            <div className="info-box-content">
+              <p><strong>Tests:</strong> Traditional assessments that evaluate your knowledge. Your answers are submitted for grading.</p>
+              <p><strong>Practice Exams:</strong> Interactive learning tools that provide immediate AI-powered feedback to help you improve. These don't affect your grades.</p>
+            </div>
+          </div>
+          
+          <form onSubmit={handleTestCodeSubmit} className="test-form">
+            <div className="form-group">
+              <label htmlFor="test-code">Test/Practice Exam Code:</label>
               <input
                 type="text"
+                id="test-code"
                 value={testCode}
                 onChange={(e) => setTestCode(e.target.value)}
-                placeholder="Enter test code (e.g., ABC123)"
-                className="test-code-input"
+                placeholder="Enter code (e.g. ABC123)"
                 required
               />
             </div>
-            <button type="submit" className="join-button">Join Test</button>
+            <div className="form-group">
+              <label htmlFor="username">Your Name:</label>
+              <input
+                type="text"
+                id="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Enter your full name"
+                required
+              />
+            </div>
+            <button type="submit" className="join-button">Start Assessment</button>
           </form>
         </div>
 
@@ -165,6 +182,11 @@ function AssessmentPage() {
                     </div>
                     
                     <div className="assessment-stats">
+                      <p>
+                        <span className={`assessment-type ${assessment.type}`}>
+                          {assessment.type === 'test' ? 'Test' : 'Practice Exam'}
+                        </span>
+                      </p>
                       <p>
                         <strong>Questions:</strong> {assessment.totalQuestions}
                       </p>

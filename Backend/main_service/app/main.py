@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .conversation_service import ConversationService
 from dotenv import load_dotenv
 import json
+import requests
 
 load_dotenv()
 
@@ -37,8 +38,10 @@ class ChatQuery(BaseModel):
     test_id: int
     test_code: str
     question_id: int
+    public_question: str
     query: str
     user_id: int
+    isPracticeExam: bool = False  # Flag to distinguish between test and practice exam queries
 
 class TeachingMaterial(BaseModel):
     topic: str
@@ -65,13 +68,34 @@ class Question(BaseModel):
 class TestCreate(BaseModel):
     name: str
     code: str
+    isPracticeExam: bool = False
     questions: List[Question]
 
 class TestResponse(BaseModel): # questions now contain 'id' field as well
     id: int
     test_name: str
     code: str
+    isPracticeExam: bool = False
     questions: List[Dict[str, Any]]
+
+class AnswerSubmission(BaseModel):
+    user_id: int
+    test_code: str
+    question_id: int
+    question_index: int
+    answer: str
+
+class TestFinishRequest(BaseModel):
+    user_id: str
+    test_id: Optional[int] = None
+    test_code: str
+
+class TestSessionStart(BaseModel):
+    user_id: int
+    test_id: int
+    test_code: str
+    question_ids: List[int]
+    total_questions: int
 
 # Initialize services
 convo_service = ConversationService(
@@ -94,8 +118,11 @@ async def chat(query: ChatQuery):
             query.user_id, 
             query.test_code, 
             query.question_id,
-            query.test_id
+            query.public_question,
+            query.test_id,
+            query.isPracticeExam
         )
+        print("main service response\n:", response)
         return {"response": response}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -126,9 +153,15 @@ async def create_test(test: TestCreate):
     async with httpx.AsyncClient() as client:
         try:
             # 1. Create test in database
+            test_base = {
+                "test_name": test.name,
+                "code": test.code,
+                "isPracticeExam": test.isPracticeExam
+            }
+            
             test_response = await client.post(
                 f"{DATABASE_SERVICE_URL}/tests",
-                json={"test_name": test.name, "code": test.code}
+                json=test_base
             )
             test_response.raise_for_status()
             test_data = test_response.json()
@@ -214,10 +247,88 @@ async def create_test(test: TestCreate):
             raise HTTPException(status_code=500, detail=f"Service error: {str(e)}")
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}")
+        
+@app.post("/submit-answer")
+async def submit_answer(submission: AnswerSubmission):
+    """Submit an answer for a question."""
+    try:
+        # Call the conversation service to submit the answer
+        result = await convo_service.submit_answer(
+            user_id=submission.user_id, 
+            test_code=submission.test_code, 
+            question_id=submission.question_id, 
+            question_index=submission.question_index, 
+            answer=submission.answer
+        )
+        
+        # Return the result to the frontend
+        response_data = {
+            "is_correct": result["is_correct"],
+            "progress": result["progress"]
+        }
+        
+        # Only include correct_answer in response if answer is incorrect
+        if not result["is_correct"]:
+            response_data["correct_answer"] = result["correct_answer"]
+        
+        return response_data
+    except Exception as e:
+        print(f"Error submitting answer: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/finish-test")
+async def finish_test(request: TestFinishRequest):
+    """Complete a test and store results in the database."""
+    try:
+        # Log the incoming request data
+        print(f"Finishing test for user: {request.user_id}, test_code: {request.test_code}")
+        
+        # Get test ID from test code if not provided
+        if not request.test_id:
+            async with httpx.AsyncClient() as client:
+                test_response = await client.get(f"{DATABASE_SERVICE_URL}/tests/by-code/{request.test_code}")
+                test_response.raise_for_status()
+                test_data = test_response.json()
+                test_id = test_data["id"]
+        else:
+            test_id = request.test_id
+            
+        print(f"Using test_id: {test_id} for test_code: {request.test_code}")
+        
+        # Call the conversation service to finish the test
+        result = await convo_service.finish_test(
+            user_id=request.user_id,
+            test_id=str(test_id),
+            request_data={"test_code": request.test_code}
+        )
+        
+        if isinstance(result, dict) and "error" in result:
+            print(f"Error finishing test: {result['error']}")
+            raise HTTPException(status_code=500, detail=result["error"])
+        
+        # Ensure the result has all required fields
+        response_data = {
+            "test_id": test_id,
+            "id": result.get("id"),
+            "score": result.get("score", 0),
+            "correct_answers": result.get("correct_questions", 0),
+            "total_questions": result.get("total_questions", 0),
+            "total_time": result.get("time_spent", 0),
+            "start_time": result.get("start_time"),
+            "end_time": result.get("end_time")
+        }
+        
+        print(f"Returning test results: {response_data}")
+        return response_data
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error finishing test: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/tests/{code}", response_model=TestResponse)
-async def get_test(code: str):
-    """Get a test by its code."""
+async def get_test(code: str, user_id: Optional[str] = None):
+    """Get a test by its code and initialize a test session if user_id is provided."""
     async with httpx.AsyncClient() as client:
         try:
             # Get test from database - now includes questions
@@ -227,12 +338,33 @@ async def get_test(code: str):
             
             if not test:
                 raise HTTPException(status_code=404, detail="Test not found")
-        
+            
+            # Initialize test session in Redis if user_id is provided
+            if user_id:
+                try:
+                    # Extract question IDs
+                    question_ids = [q["id"] for q in test["questions"]]
+                    
+                    # Log the initialization attempt
+                    print(f"Starting test session for user_id: {user_id}, test_id: {test['id']}, with {len(question_ids)} questions")
+                    
+                    # Start test session
+                    await convo_service.start_test(
+                        user_id=user_id,
+                        test_id=test["id"],
+                        test_code=code,
+                        list_question_ids=question_ids,
+                        total_questions=len(question_ids)
+                    )
+                    print(f"Test session initialized successfully")
+                except Exception as e:
+                    print(f"Error initializing test session: {str(e)}")
+                    # Continue even if session initialization fails - the test can still be rendered
             
             return test
             
-        except httpx.HTTPError as e:
-            raise HTTPException(status_code=500, detail=f"Service error: {str(e)}")
+        except httpx.HTTPException as e:
+            raise HTTPException(status_code=e.response.status_code, detail=f"Service error: {str(e)}")
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}")
 
@@ -298,8 +430,28 @@ async def find_similar_questions(query: str, n_results: int = 5):
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}")
 
-
+@app.post("/start-test")
+async def start_test(request: TestSessionStart):
+    """Initialize a new test session in Redis."""
+    try:
+        result = await convo_service.start_test(
+            request.user_id,
+            request.test_id,
+            request.test_code,
+            request.question_ids
+        )
+        # Add total questions to test data
+        result["total_questions"] = request.total_questions
+        
+        # Update Redis with the modified test data
+        test_key = convo_service._get_test_key(request.user_id, request.test_id)
+        convo_service.redis.setex(test_key, 24 * 60 * 60, json.dumps(result))
+        
+        return result
+    except Exception as e:
+        print(f"Error starting test: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000) 
+    uvicorn.run(app, host="0.0.0.0", port=8000)  

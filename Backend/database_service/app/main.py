@@ -19,6 +19,7 @@ class OrmBaseModel(BaseModel):
 class TestBase(OrmBaseModel):
     test_name: Optional[str] = None
     code: str
+    isPracticeExam: Optional[bool] = False
 
 class TestCreate(TestBase):
     questions: List[Dict[str, Any]]
@@ -81,6 +82,7 @@ class TestResponse(TestBase):
     id: int
     test_name: str
     code: str
+    isPracticeExam: bool = False
     questions: List[QuestionResponse] = []
 
 # Test endpoints
@@ -88,10 +90,10 @@ class TestResponse(TestBase):
 async def create_test(test: TestBase, db: Session = Depends(get_db)):
     """Create a new test entry in the database."""
     try:
-        print(f"Creating test with name: {test.test_name}, code: {test.code}")
+        print(f"Creating test with name: {test.test_name}, code: {test.code}, isPracticeExam: {test.isPracticeExam}")
         
         # Create the test
-        db_test = Test(test_name=test.test_name, code=test.code)
+        db_test = Test(test_name=test.test_name, code=test.code, isPracticeExam=test.isPracticeExam)
         db.add(db_test)
         db.commit()
         db.refresh(db_test)
@@ -123,13 +125,16 @@ async def get_test_by_code(code: str, db: Session = Depends(get_db)):
         id=db_test.id,
         test_name=db_test.test_name,
         code=db_test.code,
+        isPracticeExam=db_test.isPracticeExam,
         questions=[
             QuestionResponse(
                 id=q.id,
                 public_question=q.public_question,
                 hidden_values=q.hidden_values,
                 answer=q.answer,
+                formula=q.formula,
                 teacher_instructions=q.teacher_instructions,
+                hint_level=q.hint_level,
                 subject=q.subject,
                 topic=q.topic
             ) for q in questions
@@ -155,13 +160,16 @@ async def get_test(test_id: int, db: Session = Depends(get_db)):
         id=db_test.id,
         test_name=db_test.test_name,
         code=db_test.code,
+        isPracticeExam=db_test.isPracticeExam,
         questions=[
             QuestionResponse(
                 id=q.id,
                 public_question=q.public_question,
                 hidden_values=q.hidden_values,
                 answer=q.answer,
+                formula=q.formula,
                 teacher_instructions=q.teacher_instructions,
+                hint_level=q.hint_level,
                 subject=q.subject,
                 topic=q.topic
             ) for q in questions
@@ -211,7 +219,9 @@ async def get_question(question_id: int, db: Session = Depends(get_db)):
         public_question=db_question.public_question,
         hidden_values=db_question.hidden_values,
         answer=db_question.answer,
+        formula=db_question.formula,
         teacher_instructions=db_question.teacher_instructions,
+        hint_level=db_question.hint_level,
         subject=db_question.subject,
         topic=db_question.topic
     )
@@ -256,7 +266,9 @@ async def get_test_questions(test_id: Optional[int] = None, db: Session = Depend
                 public_question=q.public_question,
                 hidden_values=q.hidden_values,
                 answer=q.answer,
+                formula=q.formula,
                 teacher_instructions=q.teacher_instructions,
+                hint_level=q.hint_level,
                 subject=q.subject,
                 topic=q.topic
             ) for q in questions

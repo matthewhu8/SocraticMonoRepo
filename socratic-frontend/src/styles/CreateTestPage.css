@@ -128,6 +128,12 @@
   font-weight: bold;
 }
 
+/* Add the editing variation of the icon */
+.question-form-section h3.editing-title:before {
+  content: "✎";
+  background-color: #3498db;
+}
+
 /* Form styles */
 .question-form {
   display: flex;
@@ -227,6 +233,18 @@
   font-size: 1.2rem;
 }
 
+.add-question-btn.editing {
+  background-color: #3498db;
+}
+
+.add-question-btn.editing:hover {
+  background-color: #2980b9;
+}
+
+.add-question-btn.editing:before {
+  content: "✓";
+}
+
 /* Questions list section */
 .questions-list-section {
   margin-bottom: 2rem;
@@ -290,6 +308,66 @@
 .question-card:hover {
   transform: translateY(-3px);
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+}
+
+.question-actions {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.edit-question-button,
+.delete-question-button {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0.3rem;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.edit-question-button:hover,
+.delete-question-button:hover {
+  background-color: #f3f4f6;
+  transform: scale(1.1);
+}
+
+.edit-question-button:focus,
+.delete-question-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.3);
+}
+
+.delete-question-button:hover {
+  color: #ef4444;
+}
+
+.edit-question-button:hover {
+  color: #3b82f6;
+}
+
+.cancel-edit-button {
+  background-color: #e5e7eb;
+  color: #4b5563;
+  border: none;
+  border-radius: 6px;
+  padding: 0.8rem 1.2rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  margin-top: 1rem;
+  display: inline-block;
+}
+
+.cancel-edit-button:hover {
+  background-color: #d1d5db;
 }
 
 .question-number {

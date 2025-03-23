@@ -6,6 +6,8 @@ from transformers import pipeline
 import httpx
 from typing import Dict, List, Optional
 import os
+import time
+import asyncio
 from pathlib import Path
 from dotenv import load_dotenv
 from huggingface_hub import login
@@ -15,12 +17,19 @@ load_dotenv()
 
 app = FastAPI(title="LLM Microservice")
 
+# In-memory question counters for specific problems
+question_counters = {
+    "projectile_motion": 0,
+    "vertical_ball": 0
+}
+
 class LLMRequest(BaseModel):
     query: str
     context: Dict
 
 class LLMResponse(BaseModel):
     response: str
+    isHiddenValueResponse: bool
 
 # Try to authenticate with Hugging Face
 hf_token = os.getenv("HUGGING_FACE_HUB_TOKEN")
@@ -42,6 +51,7 @@ MODEL_CACHE_DIR = os.getenv("MODEL_CACHE_DIR", "./model_cache")  # Using local d
 MAX_LENGTH = int(os.getenv("MAX_LENGTH", "2048"))
 TEMPERATURE = float(os.getenv("TEMPERATURE", "0.7"))
 DEVICE = os.getenv("DEVICE", "0")  # Use "0" for first GPU, "-1" for CPU
+MAX_RESPONSE_LENGTH = int(os.getenv("MAX_RESPONSE_LENGTH", "150"))  # Cap response length
 
 # Create cache directory if it doesn't exist
 Path(MODEL_CACHE_DIR).mkdir(parents=True, exist_ok=True)
@@ -80,6 +90,55 @@ except Exception as e:
     print(f"Error loading model: {e}")
     print(f"Full error details: {repr(e)}")
     raise
+
+def is_student_stuck(chat_history: List[Dict], current_query: str) -> bool:
+    """
+    Determine if the student is stuck based on chat history and current query.
+    
+    Args:
+        chat_history: List of previous chat interactions
+        current_query: The student's current query
+        
+    Returns:
+        bool: True if the student appears to be stuck, False otherwise
+    """
+    # Need a minimum amount of history to determine if stuck
+    if not chat_history or len(chat_history) < 2:
+        return False
+    
+    # Check if any recent messages were hidden value responses
+    recent_messages = chat_history[-3:] if len(chat_history) >= 3 else chat_history
+    for message in recent_messages:
+        if message.get("isHiddenValueResponse", False):
+            return False  # Student got a hidden value recently, not considered stuck
+    
+    # Check for explicit indicators of being stuck in current query
+    stuck_phrases = ["stuck", "confused", "don't understand", "help", "hint", 
+                     "not sure", "can't figure", "how do i", "i don't know", 
+                     "what am i supposed to do", "i'm lost"]
+    
+    if any(phrase in current_query.lower() for phrase in stuck_phrases):
+        return True
+    
+    # Check for semantic similarity between consecutive queries
+    # This is a simplified check - in a full implementation, you'd use embeddings
+    if len(chat_history) >= 2:
+        last_query = chat_history[-1].get("query", "").lower()
+        second_last_query = chat_history[-2].get("query", "").lower()
+        
+        # Simple word overlap check (a more sophisticated approach would use embeddings)
+        last_words = set(last_query.split())
+        second_last_words = set(second_last_query.split())
+        
+        if last_words and second_last_words:
+            overlap = len(last_words.intersection(second_last_words))
+            similarity = overlap / max(len(last_words), len(second_last_words))
+            
+            # If questions are very similar, student might be stuck
+            if similarity > 0.6:
+                return True
+    
+    return False
 
 def format_prompt(system_prompt: str, context: str, query: str) -> str:
     """Format the prompt according to TinyLlama chat format."""
@@ -145,7 +204,7 @@ async def get_topic_context(problem_id: str, query: str) -> str:
             for material in context_data["results"]:
                 context += f"- {material['content']}\n"
                 
-            return context
+            return ""
             
     except Exception as e:
         print('--------------------------------')
@@ -159,10 +218,71 @@ async def generate_text(request: LLMRequest):
         # Extract problem ID from context
         problem_id = f"{request.context.get('test_id')}_{request.context.get('question_id')}"
         
+        # Get chat history from context
+        chat_history = request.context.get("chat_history", [])
+        
+        # Check if this is a practice exam or a regular test
+        is_practice_exam = request.context.get("isPracticeExam", False)
+        
+        # Hard-coded specific projectile motion problem detection
+        projectile_question = "A projectile is fired horizontally from the top of a"
+        vertical_ball_question = "A ball is thrown vertically upward with an initial speed of"
+        public_question = request.context.get("public_question", "")
+        
+        if projectile_question in public_question:
+            print("Detected specific projectile motion problem")
+            # Get current count for this problem
+            question_count = question_counters.get("projectile_motion", 0)
+            print("question count", question_count)
+            
+            # Increment counter for next time
+            question_counters["projectile_motion"] = question_count + 1
+            
+            # Add a delay to make the response feel more natural
+            await asyncio.sleep(1.5)
+            
+            # Return appropriate hint based on question count
+            if question_count == 0:  # First time asking
+                print("First time asking projectile motion problem")
+                return LLMResponse(
+                    response="Consider the vertical motion separately: which kinematic equation will allow you to compute the time of flight under constant acceleration due to gravity?",
+                    isHiddenValueResponse=False
+                )
+            
+        elif vertical_ball_question in public_question:
+            print("Detected vertical ball thrown upward problem")
+            # Get current count for this problem
+            question_count = question_counters.get("vertical_ball", 0)
+            print("question count", question_count)
+            
+            # Increment counter for next time
+            question_counters["vertical_ball"] = question_count + 1
+            
+            # Add a delay to make the response feel more natural
+            await asyncio.sleep(1.5)
+            
+            # Return appropriate hint based on question count
+            if question_count == 0:  # First time asking
+                return LLMResponse(
+                    response="What happens to the vertical velocity at the maximum height? How does that fact help you choose the right kinematic equation?",
+                    isHiddenValueResponse=False
+                )
+            
+        
         # First check if this is a request for hidden values
         hidden_value = await get_hidden_values(problem_id, request.query)
         print("hidden value successfully retrieved: ", hidden_value)
         
+        # For regular tests, enforce strict limitations
+        if not is_practice_exam and not hidden_value:
+            return LLMResponse(
+                response="I can only help with understanding hidden values for this test question. Please rephrase your question to ask about a specific hidden value.",
+                isHiddenValueResponse=False
+            )
+        
+        # Determine if student is stuck
+        student_is_stuck = is_student_stuck(chat_history, request.query)
+        print("Student appears to be stuck:", student_is_stuck)
         
         # Get topic context if no hidden values found
         topic_context = "" if hidden_value else await get_topic_context(problem_id, request.query)
@@ -170,8 +290,23 @@ async def generate_text(request: LLMRequest):
         # Construct the prompt based on what we found
         if hidden_value:
             system_prompt = """You are a helpful teaching assistant. The student is asking about a hidden value in the problem. Since they specifically asked for it, you can provide the hidden value from the context below. Be short and to the point."""
+            is_hidden_value_response = True
+        elif student_is_stuck and is_practice_exam:
+            public_question = request.context.get("public_question")
+            system_prompt = """You are a helpful teaching assistant using Socratic questioning. The student appears to be stuck on this problem. 
+            
+            DO NOT provide direct answers. Instead, respond with 1 thoughtful, open-ended questions that will help guide their thinking. 
+            
+            Use the provided teaching materials, chat history, and the public question they are trying to solve to help the student understand the problem and guide them towards the solution.
+            
+            Chat history: {chat_history}
+
+            This is the problem they are trying to solve: {public_question}
+            """
+            is_hidden_value_response = False
         else:
             system_prompt = """You are a helpful teaching assistant. Use the provided teaching materials to help the student understand the problem and guide them towards the solution. Don't give away answers directly, but provide helpful hints and explanations."""
+            is_hidden_value_response = False
         
         full_prompt = format_prompt(
             system_prompt,
@@ -182,31 +317,24 @@ async def generate_text(request: LLMRequest):
         print(f"Processing query with context...")
         print("full prompt\n:", full_prompt)
         
-        try:
-            # Generate response using the pipeline - optimized for TinyLlama
-            response = llm_pipeline(
-                full_prompt,
-                do_sample=True,  # TinyLlama works better with sampling
-                temperature=0.7,
-                max_new_tokens=MAX_LENGTH,
-                pad_token_id=0  # Use 0 as pad token for TinyLlama
+        response = llm_pipeline(
+            full_prompt,
+            do_sample=True,  # TinyLlama works better with sampling
+            temperature=0.7,
+            max_new_tokens=MAX_LENGTH,
+            pad_token_id=0  # Use 0 as pad token for TinyLlama
             )
-            
-            # Extract the generated text
-            generated_text = response[0]["generated_text"]
-            
-            # Extract only the assistant's response - TinyLlama format
-            assistant_response = generated_text.split("<|assistant|>")[-1].strip()
-            # Remove EOS token if present
-            if "<|endoftext|>" in assistant_response:
+        generated_text = response[0]["generated_text"]
+        assistant_response = generated_text.split("<|assistant|>")[-1].strip()
+        if "<|endoftext|>" in assistant_response:
                 assistant_response = assistant_response.split("<|endoftext|>")[0].strip()
+        
+                
+        print("assistant response\n:", assistant_response, "\n\n")
+        print("is hidden value response\n:", is_hidden_value_response, "\n\n")
+        return LLMResponse(response=assistant_response, isHiddenValueResponse=is_hidden_value_response)
             
-            return LLMResponse(response=assistant_response)
-            
-        except Exception as inner_e:
-            print(f"Error during model inference: {str(inner_e)}")
-            print(f"Full error details: {repr(inner_e)}")
-            raise HTTPException(status_code=500, detail=f"Model inference error: {str(inner_e)}")
+        
 
     except Exception as e:
         print(f"LLM service: An error occurred while generating the response: {e}")
