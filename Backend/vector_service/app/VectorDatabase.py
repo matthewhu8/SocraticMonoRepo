@@ -2,9 +2,13 @@ from typing import List, Dict, Any, Optional
 import os
 from datetime import datetime
 from threading import Lock
+
+# Apply pydantic patch before importing langchain
+from app import patch_pydantic
+
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
-from langchain.schema import Document
+from langchain_core.documents import Document
 
 # Settings
 CHROMA_PERSIST_DIRECTORY = os.getenv("CHROMA_PERSIST_DIRECTORY", "./chroma_db")

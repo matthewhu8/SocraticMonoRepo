@@ -63,7 +63,7 @@ function TeacherDashboardPage() {
     <div className="teacher-dashboard-container">
       <div className="dashboard-header">
         <h1>IBDP Physics Teacher Dashboard</h1>
-        <p>Create and manage your physics educational content</p>
+        <p>Welcome back Garima</p>
       </div>
       
       <div className="action-buttons">

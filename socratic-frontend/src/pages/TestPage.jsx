@@ -160,9 +160,6 @@ function TestPage() {
   const handleSendMessage = async (text) => {
     const questionId = currentQuestionIndex;
     
-    // Use the existing currentQuestion variable instead of retrieving it again
-    // This prevents the circular dependency causing infinite loops
-    
     // Update message history
     setQuestionResults(prev => ({
       ...prev,
@@ -180,16 +177,44 @@ function TestPage() {
     }));
   
     try {
-      // Create payload that matches the ChatQuery model in the backend
-      console.log(testData, "howdy there snooper")
+      // Check if this is an answer submission - ONLY if it contains both "answer" AND a number
+      const isAnswerKeyword = text.toLowerCase().includes("answer");
+      const numberMatch = text.match(/\b\d+(\.\d+)?\b/);
+      
+      // Only process as an answer submission if BOTH conditions are met
+      if (isAnswerKeyword && numberMatch) {
+        const answerValue = numberMatch[0];
+        
+        setQuestionResults(prev => ({
+          ...prev,
+          [questionId]: {
+            ...prev[questionId],
+            answer: answerValue,
+            attempts: (prev[questionId]?.attempts || 0) + 1
+          }
+        }));
+        
+        setAnswers(prev => ({
+          ...prev,
+          [questionId]: answerValue
+        }));
+        
+        // Submit the answer to the backend for validation
+        await submitAnswer(answerValue, questionId);
+        
+        // Skip chat query for answer submissions
+        return;
+      }
+      
+      // Continue with chat query for all non-answer submissions
       const chatPayload = {
         test_id: testData.id,
         test_code: testCode,
-        question_id: currentQuestion.id, // Use the existing currentQuestion
+        question_id: currentQuestion.id,
         public_question: currentQuestion.public_question,
         query: text,
-        user_id: '30',  // Use string user ID
-        isPracticeExam: testData.isPracticeExam || false // Include the practice exam flag
+        user_id: '30',
+        isPracticeExam: testData.isPracticeExam || false
       };
       
       console.log("Sending chat data to backend:", chatPayload);
@@ -206,14 +231,6 @@ function TestPage() {
       
       const data = await response.json();
       
-      // Check if AI response indicates a correct answer
-      const aiAnswerText = data.response.toLowerCase();
-      const isCorrectAnswer = 
-        aiAnswerText.includes("correct") || 
-        aiAnswerText.includes("yes, the answer is") || 
-        aiAnswerText.includes("that's right") ||
-        aiAnswerText.includes("you got it");
-      
       // Update message history with AI response
       setQuestionResults(prev => ({
         ...prev,
@@ -229,31 +246,8 @@ function TestPage() {
         [questionId]: [...(prev[questionId] || []), aiMessage]
       }));
       
-      // Check for answer attempt and submit it
-      const numberMatch = text.match(/\b\d+(\.\d+)?\b/);
-      if (numberMatch) {
-        const answerValue = numberMatch[0];
-        setQuestionResults(prev => ({
-          ...prev,
-          [questionId]: {
-            ...prev[questionId],
-            answer: answerValue,
-            attempts: (prev[questionId]?.attempts || 0) + 1
-          }
-        }));
-        setAnswers(prev => ({
-          ...prev,
-          [questionId]: answerValue
-        }));
-        
-        // Submit the answer to the backend for validation
-        await submitAnswer(answerValue, questionId);
-      }
-      // If AI confirms a correct answer but no number was detected in student message,
-      // check if there's a previous answer attempt to mark as correct
-      else if (isCorrectAnswer && answers[questionId]) {
-        await submitAnswer(answers[questionId], questionId);
-      }
+      // Remove AI confirmation logic - rely solely on direct answer submissions
+
     } catch (error) {
       console.error('Error fetching AI response:', error);
       const errorMessage = { sender: 'System', text: 'Error: Unable to get response from AI.' };
