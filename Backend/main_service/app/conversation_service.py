@@ -163,27 +163,46 @@ class ConversationService:
             "content": query,
             "timestamp": self._ensure_timestamp(datetime.now(UTC).isoformat())
         })
+        print("\nchat history:", session_data["chat_history"])
+        print()
         
         # Get LLM response
-        print("making request to llm service") 
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                f"{self.llm_service_url}/generate",
-                json={
-                    "query": query,
-                    "context": {
-                        "test_code": test_code,
-                        "test_id": test_id,
-                        "question_id": question_id,
-                        "user_id": user_id,
-                        "conversation_history": session_data["chat_history"],
-                        "public_question": public_question,
-                        "isPracticeExam": is_practice_exam
+        print("making request to llm service")
+        async with httpx.AsyncClient(timeout=httpx.Timeout(120.0)) as client:
+            try:
+                response = await client.post(
+                    f"{self.llm_service_url}/generate",
+                    json={
+                        "query": query,
+                        "context": {
+                            "test_code": test_code,
+                            "test_id": test_id,
+                            "question_id": question_id,
+                            "user_id": user_id,
+                            "conversation_history": (
+                                session_data["chat_history"][-4:]
+                                if len(session_data["chat_history"]) > 4
+                                else session_data["chat_history"]
+                            ),
+                            "public_question": public_question,
+                            "isPracticeExam": is_practice_exam
+                        }
                     }
-                }
-            )
-            print("response\n:", response)
+                )
+                # Option 1: Check status using raise_for_status() to trigger an exception
+                response.raise_for_status()  
+                # Option 2 (alternative): Manually check the status code
+                # if response.status_code != 200:
+                #     raise ValueError(f"Failed to get response from LLM service: {response.text}")
+
+                print("Request succeeded:", response.status_code)
+                # Process the response as needed...
+            except Exception as e:
+                print(f"Error in get_llm_response: {e}")
+                traceback.print_exc()
+                raise
             if response.status_code != 200:
+                print(f"Failed to get response from LLM service: {response.text}")
                 raise ValueError(f"Failed to get response from LLM service: {response.text}")
             
             llm_response = response.json().get("response", "I'm sorry, I couldn't process your request.")

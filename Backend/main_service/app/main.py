@@ -19,9 +19,16 @@ LLM_SERVICE_URL = os.getenv("LLM_SERVICE_URL", "http://localhost:8003")
 
 app = FastAPI(title="Socratic Main Service")
 
+# Update CORS middleware to support both local development and containerized environments
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # React frontend
+    allow_origins=[
+        "http://localhost:3000",  # React frontend in local development
+        "http://localhost:80",    # Frontend in containerized environment
+        "http://localhost",       # Frontend in containerized environment (default port 80)
+        "http://frontend:80",     # Frontend service name in Docker network
+        "http://frontend",        # Frontend service name in Docker network (default port 80)
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -267,9 +274,6 @@ async def submit_answer(submission: AnswerSubmission):
             "progress": result["progress"]
         }
         
-        # Only include correct_answer in response if answer is incorrect
-        if not result["is_correct"]:
-            response_data["correct_answer"] = result["correct_answer"]
         
         return response_data
     except Exception as e:
@@ -370,7 +374,7 @@ async def get_test(code: str, user_id: Optional[str] = None):
 
 @app.get("/tests/{code}/questions/{index}")
 async def get_question(code: str, index: int):
-    """Get a specific question from a test."""
+    """Get a question from a test."""
     async with httpx.AsyncClient() as client:
         try:
             # Get test with questions already included
