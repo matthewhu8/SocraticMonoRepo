@@ -22,92 +22,92 @@ function TopicProgressPage() {
   // Helper function to get mock data
   const getMockTopic = (identifier) => {
     const topics = {
-      'fractions': {
-        id: 'fractions',
-        name: 'Fraction Operations',
-        description: 'Addition, subtraction, multiplication, and division of fractions',
+      'business-organization': {
+        id: 'business-organization',
+        name: 'Business Organization',
+        description: 'Understanding organizational objectives, stakeholders, and organizational structures',
         status: 'Needs Review',
         overallProgress: 65,
         studentProgress: [
-          { id: 1, name: "Sarah Johnson", mastery: 55, image: "https://i.pravatar.cc/150?img=1", strengths: "Multiplication", weaknesses: "Addition and subtraction" },
-          { id: 2, name: "Michael Chen", mastery: 48, image: "https://i.pravatar.cc/150?img=2", strengths: "Understanding concepts", weaknesses: "Complex operations" },
-          { id: 3, name: "Emma Davis", mastery: 92, image: "https://i.pravatar.cc/150?img=3", strengths: "All operations", weaknesses: "None significant" },
-          { id: 4, name: "James Wilson", mastery: 38, image: "https://i.pravatar.cc/150?img=4", strengths: "Basic concepts", weaknesses: "Most operations" },
-          { id: 5, name: "Sofia Rodriguez", mastery: 78, image: "https://i.pravatar.cc/150?img=5", strengths: "Addition, division", weaknesses: "Subtraction" },
-          { id: 6, name: "Aiden Patel", mastery: 60, image: "https://i.pravatar.cc/150?img=6", strengths: "Visualization", weaknesses: "Multi-step problems" },
-          { id: 7, name: "Isabella Kim", mastery: 95, image: "https://i.pravatar.cc/150?img=7", strengths: "All operations", weaknesses: "None" },
-          { id: 8, name: "Lucas Thompson", mastery: 42, image: "https://i.pravatar.cc/150?img=8", strengths: "Simple problems", weaknesses: "Complex operations" },
+          { id: 1, name: "Sarah Johnson", mastery: 55, image: "https://i.pravatar.cc/150?img=1", strengths: "Stakeholder analysis", weaknesses: "Organizational structures" },
+          { id: 2, name: "Michael Chen", mastery: 48, image: "https://i.pravatar.cc/150?img=2", strengths: "Understanding concepts", weaknesses: "Case study application" },
+          { id: 3, name: "Emma Davis", mastery: 92, image: "https://i.pravatar.cc/150?img=3", strengths: "All organization topics", weaknesses: "None significant" },
+          { id: 4, name: "James Wilson", mastery: 38, image: "https://i.pravatar.cc/150?img=4", strengths: "Basic concepts", weaknesses: "Organizational objectives" },
+          { id: 5, name: "Sofia Rodriguez", mastery: 78, image: "https://i.pravatar.cc/150?img=5", strengths: "Ethics, CSR", weaknesses: "Org. structures" },
+          { id: 6, name: "Aiden Patel", mastery: 60, image: "https://i.pravatar.cc/150?img=6", strengths: "Cultural differences", weaknesses: "Stakeholder analysis" },
+          { id: 7, name: "Isabella Kim", mastery: 95, image: "https://i.pravatar.cc/150?img=7", strengths: "All topics", weaknesses: "None" },
+          { id: 8, name: "Lucas Thompson", mastery: 42, image: "https://i.pravatar.cc/150?img=8", strengths: "Basic principles", weaknesses: "Complex organizations" },
           { id: 9, name: "Olivia Martinez", mastery: 72, image: "https://i.pravatar.cc/150?img=9", strengths: "Understanding concepts", weaknesses: "Application" },
-          { id: 10, name: "Ethan Nguyen", mastery: 58, image: "https://i.pravatar.cc/150?img=10", strengths: "Division", weaknesses: "Addition, Subtraction" },
-          { id: 11, name: "Ava Williams", mastery: 82, image: "https://i.pravatar.cc/150?img=11", strengths: "Most operations", weaknesses: "Complex problems" },
-          { id: 12, name: "Noah Garcia", mastery: 65, image: "https://i.pravatar.cc/150?img=12", strengths: "Basic operations", weaknesses: "Word problems" }
+          { id: 10, name: "Ethan Nguyen", mastery: 58, image: "https://i.pravatar.cc/150?img=10", strengths: "Org. structure types", weaknesses: "Stakeholder concerns" },
+          { id: 11, name: "Ava Williams", mastery: 82, image: "https://i.pravatar.cc/150?img=11", strengths: "Most organization topics", weaknesses: "Complex case studies" },
+          { id: 12, name: "Noah Garcia", mastery: 65, image: "https://i.pravatar.cc/150?img=12", strengths: "Basic structures", weaknesses: "Evaluating structures" }
         ],
         recommendedActivities: [
-          "Fraction Manipulatives: Use virtual fraction tiles for visual learning",
-          "Guided Practice: Step-by-step walkthrough of fraction operations",
-          "Interactive Games: Fractions Dash to reinforce addition and subtraction",
-          "Real-world Applications: Recipe conversion problems"
+          "Organizational Structure Analysis: Compare and contrast different business structures",
+          "Stakeholder Mapping: Identify key stakeholders and their influence",
+          "Interactive Case Studies: Apply organizational concepts to real businesses",
+          "Corporate Social Responsibility: Evaluate CSR initiatives and their impact"
         ]
       },
-      'geometry': {
-        id: 'geometry',
-        name: 'Geometric Shapes',
-        description: 'Identifying and analyzing properties of two and three-dimensional shapes',
+      'human-resources': {
+        id: 'human-resources',
+        name: 'Human Resource Management',
+        description: 'Functions and methods of human resource management in organizations',
         status: 'Strong Performance',
         overallProgress: 90,
         studentProgress: [
-          { id: 1, name: "Sarah Johnson", mastery: 88, image: "https://i.pravatar.cc/150?img=1", strengths: "2D shapes", weaknesses: "3D calculations" },
-          { id: 2, name: "Michael Chen", mastery: 95, image: "https://i.pravatar.cc/150?img=2", strengths: "All concepts", weaknesses: "None" },
-          { id: 3, name: "Emma Davis", mastery: 97, image: "https://i.pravatar.cc/150?img=3", strengths: "All concepts", weaknesses: "None" },
-          { id: 4, name: "James Wilson", mastery: 78, image: "https://i.pravatar.cc/150?img=4", strengths: "Basic shapes", weaknesses: "Complex properties" },
-          { id: 5, name: "Sofia Rodriguez", mastery: 92, image: "https://i.pravatar.cc/150?img=5", strengths: "Properties, calculations", weaknesses: "None significant" },
-          { id: 6, name: "Aiden Patel", mastery: 89, image: "https://i.pravatar.cc/150?img=6", strengths: "Most concepts", weaknesses: "Advanced problems" },
-          { id: 7, name: "Isabella Kim", mastery: 98, image: "https://i.pravatar.cc/150?img=7", strengths: "All concepts", weaknesses: "None" },
-          { id: 8, name: "Lucas Thompson", mastery: 83, image: "https://i.pravatar.cc/150?img=8", strengths: "Basic properties", weaknesses: "Application" },
-          { id: 9, name: "Olivia Martinez", mastery: 94, image: "https://i.pravatar.cc/150?img=9", strengths: "All concepts", weaknesses: "None significant" },
-          { id: 10, name: "Ethan Nguyen", mastery: 87, image: "https://i.pravatar.cc/150?img=10", strengths: "Shape properties", weaknesses: "Complex calculations" },
-          { id: 11, name: "Ava Williams", mastery: 91, image: "https://i.pravatar.cc/150?img=11", strengths: "Most concepts", weaknesses: "None significant" },
-          { id: 12, name: "Noah Garcia", mastery: 88, image: "https://i.pravatar.cc/150?img=12", strengths: "2D and 3D shapes", weaknesses: "Some calculations" }
+          { id: 1, name: "Sarah Johnson", mastery: 88, image: "https://i.pravatar.cc/150?img=1", strengths: "Recruitment", weaknesses: "Training methods" },
+          { id: 2, name: "Michael Chen", mastery: 95, image: "https://i.pravatar.cc/150?img=2", strengths: "All HR concepts", weaknesses: "None" },
+          { id: 3, name: "Emma Davis", mastery: 97, image: "https://i.pravatar.cc/150?img=3", strengths: "All HR concepts", weaknesses: "None" },
+          { id: 4, name: "James Wilson", mastery: 78, image: "https://i.pravatar.cc/150?img=4", strengths: "Basic HR functions", weaknesses: "Strategic HRM" },
+          { id: 5, name: "Sofia Rodriguez", mastery: 92, image: "https://i.pravatar.cc/150?img=5", strengths: "Performance management", weaknesses: "None significant" },
+          { id: 6, name: "Aiden Patel", mastery: 89, image: "https://i.pravatar.cc/150?img=6", strengths: "Most HR concepts", weaknesses: "Industrial relations" },
+          { id: 7, name: "Isabella Kim", mastery: 98, image: "https://i.pravatar.cc/150?img=7", strengths: "All HR concepts", weaknesses: "None" },
+          { id: 8, name: "Lucas Thompson", mastery: 83, image: "https://i.pravatar.cc/150?img=8", strengths: "Recruitment, selection", weaknesses: "Compensation" },
+          { id: 9, name: "Olivia Martinez", mastery: 94, image: "https://i.pravatar.cc/150?img=9", strengths: "All HR concepts", weaknesses: "None significant" },
+          { id: 10, name: "Ethan Nguyen", mastery: 87, image: "https://i.pravatar.cc/150?img=10", strengths: "Training methods", weaknesses: "Strategic aspects" },
+          { id: 11, name: "Ava Williams", mastery: 91, image: "https://i.pravatar.cc/150?img=11", strengths: "Most HR concepts", weaknesses: "None significant" },
+          { id: 12, name: "Noah Garcia", mastery: 88, image: "https://i.pravatar.cc/150?img=12", strengths: "Selection processes", weaknesses: "Legal frameworks" }
         ],
         recommendedActivities: [
-          "Advanced Geometry: Introduction to coordinate geometry",
-          "Enrichment: 3D modeling projects",
-          "Challenge Problems: Higher-order thinking geometry puzzles",
-          "Independent Study: Exploration of geometric principles in architecture"
+          "Advanced HRM: Develop strategic human resource plans",
+          "Enrichment: Training and development program design",
+          "Challenge Problems: Complex compensation package analysis",
+          "Independent Study: Exploration of cultural dimensions in global HRM"
         ]
       },
-      'word-problems': {
-        id: 'word-problems',
-        name: 'Word Problems',
-        description: 'Translating real-world situations into mathematical equations',
+      'marketing': {
+        id: 'marketing',
+        name: 'Marketing',
+        description: 'Marketing objectives, planning, and the 4Ps (product, price, promotion, place)',
         status: 'Needs Attention',
         overallProgress: 62,
         studentProgress: [
-          { id: 1, name: "Sarah Johnson", mastery: 68, image: "https://i.pravatar.cc/150?img=1", strengths: "Single-step problems", weaknesses: "Multi-step problems" },
-          { id: 2, name: "Michael Chen", mastery: 55, image: "https://i.pravatar.cc/150?img=2", strengths: "Number problems", weaknesses: "Rate and ratio problems" },
-          { id: 3, name: "Emma Davis", mastery: 85, image: "https://i.pravatar.cc/150?img=3", strengths: "Most problem types", weaknesses: "Complex scenarios" },
-          { id: 4, name: "James Wilson", mastery: 42, image: "https://i.pravatar.cc/150?img=4", strengths: "Simple problems", weaknesses: "Translation to equations" },
-          { id: 5, name: "Sofia Rodriguez", mastery: 72, image: "https://i.pravatar.cc/150?img=5", strengths: "Understanding scenarios", weaknesses: "Setting up equations" },
-          { id: 6, name: "Aiden Patel", mastery: 58, image: "https://i.pravatar.cc/150?img=6", strengths: "Basic problems", weaknesses: "Multi-step scenarios" },
-          { id: 7, name: "Isabella Kim", mastery: 90, image: "https://i.pravatar.cc/150?img=7", strengths: "All problem types", weaknesses: "None significant" },
-          { id: 8, name: "Lucas Thompson", mastery: 48, image: "https://i.pravatar.cc/150?img=8", strengths: "Simple scenarios", weaknesses: "Translation to math" },
-          { id: 9, name: "Olivia Martinez", mastery: 65, image: "https://i.pravatar.cc/150?img=9", strengths: "Understanding problems", weaknesses: "Complex setups" },
-          { id: 10, name: "Ethan Nguyen", mastery: 52, image: "https://i.pravatar.cc/150?img=10", strengths: "Basic scenarios", weaknesses: "Multi-step problems" },
-          { id: 11, name: "Ava Williams", mastery: 78, image: "https://i.pravatar.cc/150?img=11", strengths: "Most problem types", weaknesses: "Some complex scenarios" },
-          { id: 12, name: "Noah Garcia", mastery: 60, image: "https://i.pravatar.cc/150?img=12", strengths: "Understanding scenarios", weaknesses: "Setting up equations" }
+          { id: 1, name: "Sarah Johnson", mastery: 68, image: "https://i.pravatar.cc/150?img=1", strengths: "Product strategies", weaknesses: "Pricing strategies" },
+          { id: 2, name: "Michael Chen", mastery: 55, image: "https://i.pravatar.cc/150?img=2", strengths: "Promotion", weaknesses: "Market research" },
+          { id: 3, name: "Emma Davis", mastery: 85, image: "https://i.pravatar.cc/150?img=3", strengths: "Most marketing areas", weaknesses: "E-marketing" },
+          { id: 4, name: "James Wilson", mastery: 42, image: "https://i.pravatar.cc/150?img=4", strengths: "Basic concepts", weaknesses: "Marketing mix application" },
+          { id: 5, name: "Sofia Rodriguez", mastery: 72, image: "https://i.pravatar.cc/150?img=5", strengths: "Market segmentation", weaknesses: "Pricing strategies" },
+          { id: 6, name: "Aiden Patel", mastery: 58, image: "https://i.pravatar.cc/150?img=6", strengths: "Product life cycle", weaknesses: "Marketing planning" },
+          { id: 7, name: "Isabella Kim", mastery: 90, image: "https://i.pravatar.cc/150?img=7", strengths: "All marketing concepts", weaknesses: "None significant" },
+          { id: 8, name: "Lucas Thompson", mastery: 48, image: "https://i.pravatar.cc/150?img=8", strengths: "Promotion strategies", weaknesses: "Market research" },
+          { id: 9, name: "Olivia Martinez", mastery: 65, image: "https://i.pravatar.cc/150?img=9", strengths: "Understanding 4Ps", weaknesses: "Extended marketing mix" },
+          { id: 10, name: "Ethan Nguyen", mastery: 52, image: "https://i.pravatar.cc/150?img=10", strengths: "Place (distribution)", weaknesses: "Digital marketing" },
+          { id: 11, name: "Ava Williams", mastery: 78, image: "https://i.pravatar.cc/150?img=11", strengths: "Most marketing areas", weaknesses: "International marketing" },
+          { id: 12, name: "Noah Garcia", mastery: 60, image: "https://i.pravatar.cc/150?img=12", strengths: "Understanding concepts", weaknesses: "Applying the marketing mix" }
         ],
         recommendedActivities: [
-          "Problem Solving Framework: Teach the 5-step approach to word problems",
-          "Visualization Techniques: Diagram drawing strategies",
-          "Guided Practice: Step-by-step breakdowns with varied problem types",
-          "Real-world Connections: Problems based on student interests"
+          "Marketing Mix Framework: Practice applying the 4Ps to different business scenarios",
+          "Market Research Techniques: Methods and analysis practice",
+          "Guided Practice: Step-by-step breakdowns of successful marketing campaigns",
+          "Real-world Applications: Create marketing plans for real businesses"
         ]
       }
     };
 
     // If no specific identifier or not found, return the first topic
     if (!identifier || !topics[identifier.toLowerCase()]) {
-      return topics.fractions;
+      return topics['business-organization'];
     }
 
     return topics[identifier.toLowerCase()];

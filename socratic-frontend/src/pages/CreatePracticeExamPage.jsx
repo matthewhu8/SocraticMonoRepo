@@ -58,7 +58,7 @@ function CreatePracticeExamPage() {
     // Format question according to the expected structure
     const formattedQuestion = {
       public_question: newQuestion.publicQuestion,
-      hidden_values: newQuestion.hiddenValues,
+      hidden_values: newQuestion.hiddenValues || '',
       answer: String(newQuestion.answer),
       formula: newQuestion.formula || '',
       teacher_instructions: newQuestion.teacherInstructions || '',
@@ -272,7 +272,7 @@ function CreatePracticeExamPage() {
             
             <div className="form-group">
               <label>
-                Hidden Values (required):<br />
+                Hidden Values:<br />
                 <input
                   type="text"
                   value={hiddenValuesRaw}

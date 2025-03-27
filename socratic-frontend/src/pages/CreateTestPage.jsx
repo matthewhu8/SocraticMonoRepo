@@ -167,7 +167,7 @@ function CreateTestPage() {
       isPracticeExam: false,
       questions: questions.map(q => ({
         public_question: q.public_question,
-        hidden_values: q.hidden_values,
+        hidden_values: q.hidden_values || '',
         answer: q.answer,
         formula: q.formula || '',
         teacher_instructions: q.teacher_instructions || '',
@@ -264,12 +264,11 @@ function CreateTestPage() {
             
             <div className="form-group">
               <label>
-                Hidden Values (required):<br />
+                Hidden Values (optional):<br />
                 <input
                   type="text"
                   value={hiddenValuesRaw}
                   onChange={handleHiddenValuesChange}
-                  required
                   className="form-input"
                   placeholder="e.g. x=3, y=10"
                 />
@@ -349,9 +348,12 @@ function CreateTestPage() {
                   <div className="question-number">{index + 1}</div>
                   <div className="question-details">
                     <p><strong>Question:</strong> {q.public_question}</p>
-                    <p><strong>Hidden Values:</strong> {Object.entries(q.hidden_values)
-                      .map(([key, value]) => `${key}=${value}`)
-                      .join(', ')}
+                    <p><strong>Hidden Values:</strong> {q.hidden_values && Object.keys(q.hidden_values).length > 0 ? 
+                      Object.entries(q.hidden_values)
+                        .map(([key, value]) => `${key}=${value}`)
+                        .join(', ') : 
+                      'None'
+                    }
                     </p>
                     <p><strong>Answer:</strong> {q.answer}</p>
                     <p><strong>Subject:</strong> {q.subject || 'Not specified'}</p>
