@@ -49,7 +49,7 @@ class ConversationService:
         print(f"Warning: Invalid timestamp type: {type(timestamp_value)}")
         return datetime.now(UTC).isoformat()
     
-    async def start_test(self, user_id: int, test_id: int, test_code: str, list_question_ids: List[int], total_questions: int = None) -> Dict:
+    async def start_test(self, user_id: int, test_id: int, test_code: str, list_question_ids: List[int], total_questions: int) -> Dict:
         """Initialize a new test session."""
         # Convert parameters to strings for consistent Redis keys
         user_id_str = str(user_id)
@@ -58,12 +58,8 @@ class ConversationService:
         # Create session key
         session_key = f"test:{user_id_str}:{test_id_str}"
         
-        # Convert question IDs to strings if they aren't already
+        # Convert question IDs to strings since the database stores them as integers
         str_question_ids = [str(qid) for qid in list_question_ids]
-        
-        # If total_questions not specified, use length of question IDs list
-        if total_questions is None:
-            total_questions = len(str_question_ids)
             
         # Timestamp for session creation
         start_timestamp = self._ensure_timestamp(datetime.now(UTC).isoformat())
@@ -79,13 +75,12 @@ class ConversationService:
             "total_questions": total_questions,
             "total_time": 0
         }
-        
+    
         print(f"Initializing test session for user {user_id_str}, test {test_id_str} with {len(str_question_ids)} questions")
         
         # Initialize session data for each question
         for question_id in str_question_ids:
             session_key_q = self._get_session_key(user_id_str, test_id_str, question_id)
-            # Only initialize if session doesn't exist yet
             if not self.redis.exists(session_key_q):
                 session_data = {
                     "chat_history": [],
@@ -98,10 +93,10 @@ class ConversationService:
                     "test_id": test_id_str,
                     "time_spent": 0
                 }
-                self.redis.setex(session_key_q, 24 * 60 * 60, json.dumps(session_data))
+                self.redis.setex(session_key_q, 2 * 60 * 60, json.dumps(session_data))
         
         # Store test data with 24 hour expiry
-        self.redis.setex(session_key, 24 * 60 * 60, json.dumps(test_data))
+        self.redis.setex(session_key, 2 * 60 * 60, json.dumps(test_data))
         return test_data
     
     async def process_query(
@@ -189,14 +184,8 @@ class ConversationService:
                         }
                     }
                 )
-                # Option 1: Check status using raise_for_status() to trigger an exception
                 response.raise_for_status()  
-                # Option 2 (alternative): Manually check the status code
-                # if response.status_code != 200:
-                #     raise ValueError(f"Failed to get response from LLM service: {response.text}")
-
                 print("Request succeeded:", response.status_code)
-                # Process the response as needed...
             except Exception as e:
                 print(f"Error in get_llm_response: {e}")
                 traceback.print_exc()
@@ -205,9 +194,7 @@ class ConversationService:
                 print(f"Failed to get response from LLM service: {response.text}")
                 raise ValueError(f"Failed to get response from LLM service: {response.text}")
             
-            llm_response = response.json().get("response", "I'm sorry, I couldn't process your request.")
-        
-        # Add assistant response to chat history
+        llm_response = response.json().get("response", "I'm sorry, I couldn't process your request.")
         session_data["chat_history"].append({
             "role": "assistant",
             "content": llm_response,

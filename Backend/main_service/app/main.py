@@ -274,7 +274,6 @@ async def submit_answer(submission: AnswerSubmission):
             "progress": result["progress"]
         }
         
-        
         return response_data
     except Exception as e:
         print(f"Error submitting answer: {str(e)}")

@@ -2,7 +2,7 @@
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from transformers import pipeline
+from transformers import pipeline, AutoModelForCausalLM
 import httpx
 from typing import Dict, List, Optional
 import os
@@ -20,8 +20,10 @@ app = FastAPI(title="LLM Microservice")
 
 # In-memory question counters for specific problems
 question_counters = {
-    "projectile_motion": 0,
-    "vertical_ball": 0
+    "economies_of_scale": 0,
+    "leadership_styles": 0,
+    "social_responsibility": 0,
+    "pricing_strategies": 0
 }
 
 class LLMRequest(BaseModel):
@@ -77,7 +79,7 @@ try:
     
     # Initialize the pipeline with optimized settings
     llm_pipeline = pipeline(
-        "text-generation",
+        task="text-generation",
         model=MODEL_NAME,
         device=device_name,
         torch_dtype=torch.float16,  # Use half precision to reduce memory usage
@@ -180,50 +182,57 @@ async def generate_text(request: LLMRequest):
         is_practice_exam = request.context.get("isPracticeExam", False)
         
         # Hard-coded specific projectile motion problem detection
-        # projectile_question = "A projectile is fired horizontally from the top of a"
-        # vertical_ball_question = "A ball is thrown vertically upward with an initial speed of"
-        # public_question = request.context.get("public_question", "")
+
+        economies_of_scale = "Evaluate the impact of economies"
+        leadership_styles = "different leadership styles can influence"
+        social_responsibility = "Examine the role of corporate social responsibility"
+        pricing_strategies = "Explain the key factors that influence pricing strategies"
+        public_question = request.context.get("public_question", "")
         
-        # if projectile_question in public_question:
-        #     print("Detected specific projectile motion problem")
-        #     # Get current count for this problem
-        #     question_count = question_counters.get("projectile_motion", 0)
-        #     print("question count", question_count)
+        if economies_of_scale in public_question:
+            question_count = question_counters.get("economies_of_scale")
+            question_counters["economies_of_scale"] = question_count + 1
+            await asyncio.sleep(3)
             
-        #     # Increment counter for next time
-        #     question_counters["projectile_motion"] = question_count + 1
+            if question_count == 0:  # First time asking
+                print("First time asking economies of scale problem")
+                return LLMResponse(
+                    response="Consider both the cost advantages that can come from increased production levels and the potential challenges such as coordination difficulties and diminishing returns as the business grows.",
+                    isHiddenValueResponse=False
+                )
             
-        #     # Add a delay to make the response feel more natural
-        #     await asyncio.sleep(1.5)
+        elif leadership_styles in public_question:
+            question_count = question_counters.get("leadership_styles", 0)            
+            question_counters["leadership_styles"] = question_count + 1
+            await asyncio.sleep(3)
             
-        #     # Return appropriate hint based on question count
-        #     if question_count == 0:  # First time asking
-        #         print("First time asking projectile motion problem")
-        #         return LLMResponse(
-        #             response="Consider the vertical motion separately: which kinematic equation will allow you to compute the time of flight under constant acceleration due to gravity?",
-        #             isHiddenValueResponse=False
-        #         )
+            # Return appropriate hint based on question count
+            if question_count == 0:  # First time asking
+                return LLMResponse(
+                    response="Reflect on various leadership approaches and link them to motivational theories. Think about how a the behavior of a leader might foster or hinder an environment that drives employee engagement.",
+                    isHiddenValueResponse=False
+                )
+        elif social_responsibility in public_question:
+            question_count = question_counters.get("social_responsibility", 0)
+            question_counters["social_responsibility"] = question_count + 1
+            await asyncio.sleep(3)
             
-        # elif vertical_ball_question in public_question:
-        #     print("Detected vertical ball thrown upward problem")
-        #     # Get current count for this problem
-        #     question_count = question_counters.get("vertical_ball", 0)
-        #     print("question count", question_count)
+            if question_count == 0:  # First time asking
+                return LLMResponse(
+                    response="Analyze how CSR initiatives might build stakeholder trust and add value to the brand, while also considering any possible trade-offs or challenges involved in implementing these practices.",
+                    isHiddenValueResponse=False
+                )
+        elif pricing_strategies in public_question:
+            question_count = question_counters.get("pricing_strategies", 0)
+            question_counters["pricing_strategies"] = question_count + 1
+            await asyncio.sleep(3)
             
-        #     # Increment counter for next time
-        #     question_counters["vertical_ball"] = question_count + 1
+            if question_count == 0:  # First time asking
+                return LLMResponse(
+                    response="Consider internal factors such as cost structure and business objectives alongside external factors like market demand, competitor actions, and customer perceptions.",
+                    isHiddenValueResponse=False
+                )
             
-        #     # Add a delay to make the response feel more natural
-        #     await asyncio.sleep(1.5)
-            
-        #     # Return appropriate hint based on question count
-        #     if question_count == 0:  # First time asking
-        #         return LLMResponse(
-        #             response="What happens to the vertical velocity at the maximum height? How does that fact help you choose the right kinematic equation?",
-        #             isHiddenValueResponse=False
-        #         )
-            
-        
         # First check if this is a request for hidden values
         try:
             hidden_value = await get_hidden_values(problem_id, request.query)
@@ -244,10 +253,15 @@ async def generate_text(request: LLMRequest):
         
         # Construct the prompt based on what we found
         if hidden_value:
-            system_prompt = f"""You are a helpful teaching assistant. The student is asking about a hidden value in the problem. Since they specifically asked for it, you can provide the hidden value from the context below. Be short and to the point.
+            system_prompt = f"""You are a helpful teaching assistant. The student is asking about a hidden value in the problem. Since they specifically asked for it, you can provide the hidden value from the context. Be short and to the point.
 
 IMPORTANT: Keep your response under 60 characters. Be concise and direct."""
             is_hidden_value_response = True
+            llm_context = f"""
+            This is the problem they are trying to solve: {public_question}
+
+            Here is the hidden value: {hidden_value}
+            """
 
         elif is_practice_exam:
             public_question = str(request.context.get("public_question"))
@@ -256,12 +270,20 @@ IMPORTANT: Keep your response under 60 characters. Be concise and direct."""
             DO NOT provide direct answers. Use the provided teaching materials, chat history, and the public question they are trying to solve to help the student understand the problem and guide them towards the solution.
             
             IMPORTANT: Keep your response under 60 characters. Be concise and direct. 
-            Review the chat history to ensure your questions build off the users thoughts and your old responses. Don't ask the same question twice.
+            Review the chat history to ensure your questions to ensure you aren't asking the same question. Don't ask the same question twice.
             
             Chat history: {chat_history}
 
             This is the problem they are trying to solve: {public_question}
             """
+            llm_context = f"""
+            This is the problem they are trying to solve: {public_question}
+
+            Here is the chat history: {chat_history}
+
+            Here are some help teaching materials: {topic_context}
+            """
+            
             is_hidden_value_response = False
         
         full_prompt = format_prompt(
@@ -275,6 +297,7 @@ IMPORTANT: Keep your response under 60 characters. Be concise and direct."""
         
         response = llm_pipeline(
             full_prompt,
+            context = llm_context,
             do_sample=True,
             temperature=TEMPERATURE,
             max_new_tokens=MAX_RESPONSE_LENGTH,

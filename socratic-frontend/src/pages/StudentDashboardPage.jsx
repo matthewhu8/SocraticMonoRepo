@@ -5,40 +5,40 @@ import '../styles/StudentDashboardPage.css';
 
 function StudentDashboardPage() {
   const [recommendedTopics, setRecommendedTopics] = useState([
-    { id: 1, name: "Mechanics", progress: 65, priority: "high", aiConfidence: 92, aiRecommended: true },
-    { id: 2, name: "Thermal Physics", progress: 40, priority: "medium", aiConfidence: 78, aiRecommended: false },
-    { id: 3, name: "Waves", progress: 20, priority: "high", aiConfidence: 95, aiRecommended: true },
-    { id: 4, name: "Electricity & Magnetism", progress: 75, priority: "low", aiConfidence: 65, aiRecommended: false },
-    { id: 5, name: "Atomic & Nuclear Physics", progress: 30, priority: "medium", aiConfidence: 85, aiRecommended: true }
+    { id: 1, name: "Business Organization", progress: 65, priority: "high", aiConfidence: 92, aiRecommended: true },
+    { id: 2, name: "Human Resources", progress: 40, priority: "medium", aiConfidence: 78, aiRecommended: false },
+    { id: 3, name: "Finance & Accounts", progress: 20, priority: "high", aiConfidence: 95, aiRecommended: true },
+    { id: 4, name: "Marketing", progress: 75, priority: "low", aiConfidence: 65, aiRecommended: false },
+    { id: 5, name: "Operations Management", progress: 30, priority: "medium", aiConfidence: 85, aiRecommended: true }
   ]);
   
   // Mock data for performance overview
   const [recentPracticeResults, setRecentPracticeResults] = useState([
-    { id: 1, topic: "Motion", date: "2023-05-15", score: 85, timeSpent: "25 min" },
-    { id: 2, topic: "Electricity", date: "2023-05-14", score: 72, timeSpent: "18 min" },
-    { id: 3, topic: "Forces", date: "2023-05-12", score: 68, timeSpent: "30 min" }
+    { id: 1, topic: "Business Ethics", date: "2023-05-15", score: 85, timeSpent: "25 min" },
+    { id: 2, topic: "Marketing", date: "2023-05-14", score: 72, timeSpent: "18 min" },
+    { id: 3, topic: "Human Resources", date: "2023-05-12", score: 68, timeSpent: "30 min" }
   ]);
   
   // Mock data for skill mastery
   const [skillMastery, setSkillMastery] = useState([
-    { id: 1, skill: "Kinematics", level: "Advanced", progress: 92 },
-    { id: 2, skill: "Circular Motion", level: "Intermediate", progress: 75 },
-    { id: 3, skill: "Thermodynamics", level: "Beginner", progress: 45 },
-    { id: 4, skill: "Electric Circuits", level: "Intermediate", progress: 68 }
+    { id: 1, skill: "SWOT Analysis", level: "Advanced", progress: 92 },
+    { id: 2, skill: "Market Segmentation", level: "Intermediate", progress: 75 },
+    { id: 3, skill: "Financial Ratios", level: "Beginner", progress: 45 },
+    { id: 4, skill: "Organizational Structure", level: "Intermediate", progress: 68 }
   ]);
   
   // Mock data for assessment scores
   const [recentAssessments, setRecentAssessments] = useState([
-    { id: 1, name: "Mechanics Mid-Term", date: "2023-05-10", score: 88, improvement: 5 },
-    { id: 2, name: "Waves & Optics Quiz", date: "2023-05-05", score: 75, improvement: 3 },
-    { id: 3, name: "Electromagnetism Test", date: "2023-04-28", score: 82, improvement: 7 }
+    { id: 1, name: "Business Organization Mid-Term", date: "2023-05-10", score: 88, improvement: 5 },
+    { id: 2, name: "Marketing Mix Quiz", date: "2023-05-05", score: 75, improvement: 3 },
+    { id: 3, name: "Financial Statements Test", date: "2023-04-28", score: 82, improvement: 7 }
   ]);
   
   // Mock data for skill gaps
   const [skillGaps, setSkillGaps] = useState([
-    { id: 1, skill: "Relativity", status: "critical", recommendedResource: "Relativity Physics Practice Set" },
-    { id: 2, skill: "Electromagnetic Induction", status: "warning", recommendedResource: "Faraday's Law Workshop" },
-    { id: 3, skill: "Projectile Motion", status: "moderate", recommendedResource: "Intro to Projectile Motion" }
+    { id: 1, skill: "Lean Production", status: "critical", recommendedResource: "Lean Production Practice Set" },
+    { id: 2, skill: "Break-even Analysis", status: "warning", recommendedResource: "Financial Analysis Workshop" },
+    { id: 3, skill: "Corporate Social Responsibility", status: "moderate", recommendedResource: "Intro to CSR" }
   ]);
   
   // Mock data for progress history
@@ -52,9 +52,9 @@ function StudentDashboardPage() {
   
   // Mock data for completed assessments
   const [completedAssessments, setCompletedAssessments] = useState([
-    { id: 1, name: "Kinematics & Dynamics", attempts: 2, highestScore: 92, completedDate: "2023-04-15" },
-    { id: 2, name: "Thermal Physics", attempts: 1, highestScore: 88, completedDate: "2023-03-22" },
-    { id: 3, name: "Wave Phenomena", attempts: 3, highestScore: 79, completedDate: "2023-02-18" }
+    { id: 1, name: "Business Organization & Human Resources", attempts: 2, highestScore: 92, completedDate: "2023-04-15" },
+    { id: 2, name: "Marketing", attempts: 1, highestScore: 88, completedDate: "2023-03-22" },
+    { id: 3, name: "Operations Management", attempts: 3, highestScore: 79, completedDate: "2023-02-18" }
   ]);
 
   const learningStats = {
@@ -70,11 +70,11 @@ function StudentDashboardPage() {
     setLoading(true);
     setTimeout(() => {
       const refreshedTopics = [
-        { id: 1, name: "Mechanics", progress: 68, priority: "medium", aiConfidence: 86, aiRecommended: true },
-        { id: 2, name: "Wave Phenomena", progress: 45, priority: "high", aiConfidence: 91, aiRecommended: true },
-        { id: 3, name: "Thermodynamics", progress: 25, priority: "low", aiConfidence: 72, aiRecommended: false },
-        { id: 4, name: "Electromagnetism", progress: 80, priority: "low", aiConfidence: 65, aiRecommended: false },
-        { id: 5, name: "Nuclear Physics", progress: 35, priority: "medium", aiConfidence: 88, aiRecommended: true }
+        { id: 1, name: "Business Organization", progress: 68, priority: "medium", aiConfidence: 86, aiRecommended: true },
+        { id: 2, name: "Finance & Accounting", progress: 45, priority: "high", aiConfidence: 91, aiRecommended: true },
+        { id: 3, name: "Human Resources", progress: 25, priority: "low", aiConfidence: 72, aiRecommended: false },
+        { id: 4, name: "Marketing", progress: 80, priority: "low", aiConfidence: 65, aiRecommended: false },
+        { id: 5, name: "Operations Management", progress: 35, priority: "medium", aiConfidence: 88, aiRecommended: true }
       ];
       setRecommendedTopics(refreshedTopics);
       setLoading(false);
@@ -100,8 +100,8 @@ function StudentDashboardPage() {
 
       <div className="dashboard-header">
         <h1>Student Dashboard</h1>
-        <p>Track your progress in IBDP Physics</p>
-        <span className="welcome-message">Welcome back, Physics Student!</span>
+        <p>Track your progress in IBDP Business Management</p>
+        <span className="welcome-message">Welcome back, Business Management Student!</span>
       </div>
 
       <div className="dashboard-content">
@@ -178,7 +178,7 @@ function StudentDashboardPage() {
             </div>
             
             <p className="section-description">
-              Focus on these areas to improve your IBDP Physics performance.
+              Focus on these areas to improve your IBDP Business Management performance.
             </p>
             
             <div className="skill-gap-grid">
@@ -251,7 +251,7 @@ function StudentDashboardPage() {
                 <div className="learning-goals-content">
                   <div className="active-goal">
                     <span className="goal-label">Active Goal:</span>
-                    <span className="goal-title">Master Electromagnetism</span>
+                    <span className="goal-title">Master Financial Analysis</span>
                     <div className="goal-progress-bar">
                       <div className="goal-progress-fill" style={{ width: '65%' }}></div>
                     </div>
@@ -261,8 +261,8 @@ function StudentDashboardPage() {
                   <div className="completed-goals">
                     <span className="completed-goals-label">Completed Goals:</span>
                     <ul className="completed-goals-list">
-                      <li>Complete Mechanics Fundamentals <span className="completion-date">Apr 10, 2023</span></li>
-                      <li>Finish Waves & Optics <span className="completion-date">Mar 22, 2023</span></li>
+                      <li>Complete Business Organization Fundamentals <span className="completion-date">Apr 10, 2023</span></li>
+                      <li>Finish Marketing Strategies <span className="completion-date">Mar 22, 2023</span></li>
                     </ul>
                   </div>
                   
@@ -275,7 +275,7 @@ function StudentDashboardPage() {
           {/* Knowledge Map Section */}
           <div className="knowledge-map-section">
             <div className="section-header">
-              <h2>Your Physics Knowledge Map</h2>
+              <h2>Your Business Management Knowledge Map</h2>
               <div className="section-actions">
                 <button onClick={refreshRecommendations} className="refresh-btn" disabled={loading}>
                   {loading ? 'Refreshing...' : 'Refresh Recommendations'}
@@ -284,13 +284,13 @@ function StudentDashboardPage() {
             </div>
 
             <p className="section-description">
-              Focus on these IBDP Physics topics to improve your skills - AI-powered recommendations highlighted
+              Focus on these IBDP Business Management topics to improve your skills - AI-powered recommendations highlighted
             </p>
 
             {loading ? (
               <div className="loading-state">
                 <div className="loading-spinner"></div>
-                <p>Analyzing your physics learning patterns...</p>
+                <p>Analyzing your business management learning patterns...</p>
               </div>
             ) : (
               <div className="knowledge-map">
@@ -313,11 +313,11 @@ function StudentDashboardPage() {
 
         {/* Bottom Row - Learning Stats */}
         <div className="stats-section">
-          <h3>Your Physics Learning Stats</h3>
+          <h3>Your Business Management Learning Stats</h3>
           <div className="stats-grid">
             <div className="stat-card">
               <span className="stat-number">{learningStats.modulesCompleted}</span>
-              <span className="stat-label">Physics Modules Completed</span>
+              <span className="stat-label">Business Modules Completed</span>
             </div>
             <div className="stat-card">
               <span className="stat-number">{learningStats.averageScore}</span>

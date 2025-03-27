@@ -40,18 +40,8 @@ function TestPage() {
             throw new Error('Test not found. Please check the test code and try again.');
           }
           throw new Error(`Error fetching test: ${response.statusText}`);
-        }
-        
+        }  
         const data = await response.json();
-        console.log('Test data received:', JSON.stringify(data, null, 2));
-        console.log('Number of questions:', data.questions ? data.questions.length : 0);
-        
-        if (data.questions && data.questions.length > 0) {
-          console.log('First question sample:', data.questions[0]);
-        } else {
-          console.warn('No questions found in the test data');
-        }
-        
         setTestData(data);
         const initialMessages = {};
         if (data.questions) {
@@ -97,7 +87,7 @@ function TestPage() {
         const initialResults = {};
         memoizedTestData.questions.forEach((_, index) => {
           initialResults[index] = {
-            startTime: new Date(),
+            startTime: new Date(), // set to zero when making chat session changes. 
             endTime: null,
             answer: null,
             isCorrect: false,

@@ -24,37 +24,37 @@ function TeacherDashboardPage() {
   const classInsights = [
     {
       type: "weak",
-      title: "Kinematics Calculations",
+      title: "Financial Statement Analysis",
       status: "Needs Review",
-      details: "65% of students struggle with projectile motion calculations",
-      recommendation: "Consider implementing a dedicated projectile motion mini-module"
+      details: "65% of students struggle with balance sheet and income statement analysis",
+      recommendation: "Consider implementing a dedicated financial statements mini-module"
     },
     {
       type: "strong",
-      title: "Electrical Circuits",
+      title: "Marketing Strategies",
       status: "Very Strong Performance",
-      details: "90% of students show mastery in analyzing simple circuit configurations",
-      recommendation: "Ready for advanced circuit analysis concepts"
+      details: "90% of students show mastery in analyzing marketing mix applications",
+      recommendation: "Ready for advanced international marketing concepts"
     },
     {
       type: "weak",
-      title: "Wave Problems",
+      title: "Operations Management",
       status: "Needs Attention",
-      details: "Multiple students having difficulty translating wave equations to problem contexts",
-      recommendation: "Provide additional examples with step-by-step wave problem breakdowns"
+      details: "Multiple students having difficulty applying lean production concepts to case studies",
+      recommendation: "Provide additional examples with step-by-step operations case study breakdowns"
     }
   ];
 
   // Mock teaching suggestions based on data
   const teachingSuggestions = [
     {
-      title: "Adjust Pacing for Mechanics",
-      description: "Data suggests slowing down on projectile motion and providing more hands-on demonstrations",
+      title: "Adjust Pacing for Finance",
+      description: "Data suggests slowing down on financial ratio analysis and providing more practical examples",
       impact: "Could improve understanding for 8 struggling students"
     },
     {
-      title: "Enrichment Opportunity: Electromagnetism",
-      description: "Class shows strong understanding of basic circuits. Consider introducing electromagnetic induction.",
+      title: "Enrichment Opportunity: Global Marketing",
+      description: "Class shows strong understanding of basic marketing concepts. Consider introducing global marketing strategies.",
       impact: "Could challenge 10 high-performing students"
     }
   ];
@@ -62,35 +62,35 @@ function TeacherDashboardPage() {
   return (
     <div className="teacher-dashboard-container">
       <div className="dashboard-header">
-        <h1>IBDP Physics Teacher Dashboard</h1>
+        <h1>IBDP Business Management Teacher Dashboard</h1>
         <p>Welcome back Garima</p>
       </div>
       
       <div className="action-buttons">
         <Link to="/teachers/create-test" className="action-button">
           <div className="button-icon">📝</div>
-          <h2>Create Physics Test</h2>
-          <p>Generate physics tests with custom questions</p>
+          <h2>Create Business Test</h2>
+          <p>Generate business tests with custom questions</p>
         </Link>
         
         <Link to="/teachers/create-learning-module" className="action-button">
           <div className="button-icon">📚</div>
-          <h2>Create Physics Module</h2>
-          <p>Design interactive physics learning modules</p>
+          <h2>Create Business Module</h2>
+          <p>Design interactive business learning modules</p>
         </Link>
         
         <Link to="/teachers/create-practice-exam" className="action-button">
           <div className="button-icon">🧠</div>
-          <h2>Create Physics Practice Exam</h2>
-          <p>Build IBDP-style physics practice exams with AI feedback</p>
+          <h2>Create Business Practice Exam</h2>
+          <p>Build IBDP-style business practice exams with AI feedback</p>
         </Link>
       </div>
 
       <div className="dashboard-content">
-        <div className="analytics-section full-width">
-          <h2>Physics Class Insights</h2>
+        <div className="analytics-section">
+          <h2>Business Class Insights</h2>
           <p className="section-description">
-            Aggregated physics performance data showing common patterns and areas needing attention
+            Aggregated business performance data showing common patterns and areas needing attention
           </p>
           
           <div className="insights-container">
@@ -113,10 +113,10 @@ function TeacherDashboardPage() {
           </div>
         </div>
 
-        <div className="analytics-section full-width">
-          <h2>Physics Teaching Recommendations</h2>
+        <div className="analytics-section">
+          <h2>Business Teaching Recommendations</h2>
           <p className="section-description">
-            Data-driven suggestions to improve physics class performance
+            Data-driven suggestions to improve business class performance
           </p>
           
           <div className="suggestions-container">
@@ -136,21 +136,21 @@ function TeacherDashboardPage() {
       </div>
 
       <div className="active-content-section">
-        <h2>Active Physics Content</h2>
+        <h2>Active Business Content</h2>
         <div className="content-grid">
           <div className="content-column">
             <h3>Active Tests <span className="count">(3)</span></h3>
             <ul className="content-list">
               <li className="content-item">
-                <span className="content-title">Mechanics Quiz</span>
+                <span className="content-title">Business Organization Quiz</span>
                 <span className="content-students">24 students</span>
               </li>
               <li className="content-item">
-                <span className="content-title">Electricity & Magnetism Test</span>
+                <span className="content-title">Marketing & Finance Test</span>
                 <span className="content-students">18 students</span>
               </li>
               <li className="content-item">
-                <span className="content-title">Waves & Optics Final</span>
+                <span className="content-title">Human Resources Final</span>
                 <span className="content-students">32 students</span>
               </li>
             </ul>
@@ -160,11 +160,11 @@ function TeacherDashboardPage() {
             <h3>Learning Modules <span className="count">(2)</span></h3>
             <ul className="content-list">
               <li className="content-item">
-                <span className="content-title">Kinematics Fundamentals</span>
+                <span className="content-title">Organizational Structure Fundamentals</span>
                 <span className="content-students">28 students</span>
               </li>
               <li className="content-item">
-                <span className="content-title">Atomic & Nuclear Physics</span>
+                <span className="content-title">Finance & Accounts</span>
                 <span className="content-students">22 students</span>
               </li>
             </ul>
@@ -174,11 +174,11 @@ function TeacherDashboardPage() {
             <h3>Practice Exams <span className="count">(2)</span></h3>
             <ul className="content-list">
               <li className="content-item">
-                <span className="content-title">IBDP Physics Paper 1 Practice</span>
+                <span className="content-title">IBDP Business Paper 1 Practice</span>
                 <span className="content-students">45 students</span>
               </li>
               <li className="content-item">
-                <span className="content-title">IBDP Physics Paper 2 Practice</span>
+                <span className="content-title">IBDP Business Paper 2 Practice</span>
                 <span className="content-students">38 students</span>
               </li>
             </ul>

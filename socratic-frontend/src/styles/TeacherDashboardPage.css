@@ -30,6 +30,7 @@
   grid-template-columns: repeat(3, 1fr);
   gap: 1.5rem;
   margin-bottom: 3rem;
+  padding: 0;
   width: 90%;
   max-width: 1200px;
   margin-left: auto;
@@ -78,14 +79,16 @@
   flex-direction: column;
   gap: 2rem;
   margin-bottom: 3rem;
-  align-items: center;
   width: 100%;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .students-column, 
 .analytics-column {
-  width: 80%;
-  max-width: 800px;
+  width: 1%;
+  max-width: 80%;
   margin: 0 auto;
 }
 
@@ -173,6 +176,11 @@
   padding: 1.5rem;
   margin-bottom: 1.5rem;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  width: 100%;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
 }
 
 .analytics-section h2 {
@@ -180,21 +188,21 @@
   font-size: 1.5rem;
   margin-bottom: 0.5rem;
   font-weight: 600;
-  text-align: center;
 }
 
 .section-description {
   color: #718096;
   font-size: 0.9rem;
   margin-bottom: 1.5rem;
-  text-align: center;
 }
 
 /* Insights Section */
 .insights-container {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 1.5rem;
+  width: 90%;
+  margin: 0 auto;
 }
 
 .insight-card {
@@ -265,8 +273,10 @@
 /* Suggestions Section */
 .suggestions-container {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 1.5rem;
+  width: 90%;
+  margin: 0 auto;
 }
 
 .suggestion-card {
@@ -323,11 +333,9 @@
 
 /* Active Content Section */
 .active-content-section {
-  width: 90%;
+  width: 100%;
   max-width: 1200px;
-  margin-bottom: 2rem;
-  margin-left: auto;
-  margin-right: auto;
+  margin: 0 auto 2rem auto;
 }
 
 .active-content-section h2 {
@@ -336,6 +344,7 @@
   margin-bottom: 1.5rem;
   padding-bottom: 0.5rem;
   border-bottom: 2px solid #e2e8f0;
+  text-align: center;
 }
 
 .content-grid {
@@ -462,12 +471,5 @@
 }
 
 .analytics-section.full-width {
-  background-color: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  width: 140%;
-  max-width: 1200px;
-  margin-left: 31%;
+  display: none;
 }
