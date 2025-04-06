@@ -4,6 +4,33 @@ from datetime import datetime
 
 Base = declarative_base()
 
+# New models for authentication
+class StudentUser(Base):
+    __tablename__ = "student_users"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    email = Column(String, unique=True, index=True, nullable=False)
+    hashed_password = Column(String, nullable=False)
+    grade = Column(String)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.now)
+    
+    # Relationship to test results
+    test_results = relationship("TestResult", back_populates="student")
+
+class TeacherUser(Base):
+    __tablename__ = "teacher_users"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    email = Column(String, unique=True, index=True, nullable=False)
+    hashed_password = Column(String, nullable=False)
+    subject = Column(String)
+    school = Column(String)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.now)
+
 class Test(Base):
     __tablename__ = "tests"
     
@@ -44,6 +71,9 @@ class TestResult(Base):
     start_time = Column(DateTime, default=datetime.now)
     end_time = Column(DateTime, nullable=True)
     
+    # Add foreign key to student user
+    student_id = Column(Integer, ForeignKey("student_users.id"), nullable=True)
+    student = relationship("StudentUser", back_populates="test_results")
     question_results = relationship("QuestionResult", back_populates="test_result")
 
 class QuestionResult(Base):

@@ -12,6 +12,13 @@
   margin-bottom: 2rem;
 }
 
+.header-top {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 1rem;
+  width: 100%;
+}
+
 .dashboard-header h1 {
   font-size: 2.5rem;
   color: #1a365d;
@@ -22,6 +29,20 @@
 .dashboard-header p {
   font-size: 1.1rem;
   color: #4a5568;
+}
+
+.dashboard-header .back-link {
+  color: #4299e1;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.9rem;
+  transition: color 0.2s ease;
+  display: inline-block;
+}
+
+.dashboard-header .back-link:hover {
+  color: #2b6cb0;
+  text-decoration: underline;
 }
 
 /* Action Buttons */

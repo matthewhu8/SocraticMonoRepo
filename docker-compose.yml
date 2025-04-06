@@ -11,11 +11,6 @@ services:
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_USER=postgres
       - POSTGRES_DB=socratic
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   frontend:
     build:
@@ -25,7 +20,7 @@ services:
     depends_on:
       - main_service
     environment:
-      - REACT_APP_API_URL=http://main_service:8000
+      - REACT_APP_API_URL=http://localhost:8000
 
   main_service:
     build:
@@ -60,18 +55,20 @@ services:
       - "8002:8002"
     volumes:
       - vector_data:/app/data/chroma_db
+    environment:
+      - CHROMA_PERSIST_DIRECTORY=/app/data/chroma_db
 
   llm_service:
     build:
       context: ./Backend/llm_service
     ports:
-      - "8003:8001"
+      - "8003:8003"
     volumes:
       - llm_cache:/app/model_cache
     environment:
-      - PORT=8001
       - MODEL_CACHE_DIR=/app/model_cache
-      - DEVICE=mps
+      - PORT=8003
+      - HUGGING_FACE_HUB_TOKEN=${HUGGING_FACE_HUB_TOKEN}
 
   redis:
     image: redis:alpine

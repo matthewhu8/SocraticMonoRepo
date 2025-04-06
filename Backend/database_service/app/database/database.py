@@ -11,13 +11,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
 DB_PATH = os.path.join(BASE_DIR, "socratic.db")
 DEFAULT_SQLITE_URL = f"sqlite:///{DB_PATH}"
 
-# PostgreSQL configuration (now as fallback)
-DEFAULT_POSTGRES_URL = "postgresql://postgres:postgres@localhost:5432/socratic"
+# PostgreSQL configuration
+# Use environment variable if set (will be set by Docker Compose)
+DEFAULT_POSTGRES_URL = os.getenv(
+    "DATABASE_URL", 
+    "postgresql://postgres:postgres@postgres:5432/socratic"
+)
 
-# Use SQLite by default, PostgreSQL as fallback
-DATABASE_URL = os.getenv("DATABASE_URL", DEFAULT_SQLITE_URL)
+# Use DATABASE_URL from environment if provided, otherwise use default PostgreSQL
+DATABASE_URL = os.getenv("DATABASE_URL", DEFAULT_POSTGRES_URL)
 print(f"Using database URL: {DATABASE_URL}")
-DATABASE_URL = DEFAULT_SQLITE_URL # comment this out to use PostgreSQL
 
 # Create SQLAlchemy engine with appropriate parameters
 engine_args = {}

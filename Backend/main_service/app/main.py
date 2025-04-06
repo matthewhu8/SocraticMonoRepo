@@ -1,5 +1,5 @@
-from fastapi import FastAPI, HTTPException, Depends, File, UploadFile, Form
-from pydantic import BaseModel
+from fastapi import FastAPI, HTTPException, Depends, File, UploadFile, Form, Request
+from pydantic import BaseModel, EmailStr
 from typing import List, Dict, Any, Optional
 import httpx
 import os
@@ -33,6 +33,32 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Authentication schema models
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+class StudentCreate(BaseModel):
+    name: str
+    email: EmailStr
+    password: str
+    grade: Optional[str] = None
+
+class TeacherCreate(BaseModel):
+    name: str
+    email: EmailStr
+    password: str
+    subject: Optional[str] = None
+    school: Optional[str] = None
+
+class TokenResponse(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+
+class RefreshToken(BaseModel):
+    refresh_token: str
 
 class ChatRequest(BaseModel):
     problem_id: int
@@ -109,6 +135,124 @@ convo_service = ConversationService(
     llm_service_url=LLM_SERVICE_URL,
     database_service_url=DATABASE_SERVICE_URL
 )
+
+# Authentication endpoints
+@app.post("/api/auth/student/register")
+async def register_student(student: StudentCreate):
+    """Register a new student through the API Gateway pattern."""
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.post(
+                f"{DATABASE_SERVICE_URL}/auth/student/register",
+                json=student.model_dump()
+            )
+            response.raise_for_status()  # Raise exception for HTTP error responses
+            return response.json()
+        except httpx.HTTPStatusError as e:
+            # Forward the exact error from the database service
+            error_detail = e.response.json().get("detail", str(e))
+            status_code = e.response.status_code
+            raise HTTPException(status_code=status_code, detail=error_detail)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Registration error: {str(e)}")
+
+@app.post("/api/auth/teacher/register")
+async def register_teacher(teacher: TeacherCreate):
+    """Register a new teacher through the API Gateway pattern."""
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.post(
+                f"{DATABASE_SERVICE_URL}/auth/teacher/register",
+                json=teacher.model_dump()
+            )
+            response.raise_for_status()
+            return response.json()
+        except httpx.HTTPStatusError as e:
+            error_detail = e.response.json().get("detail", str(e))
+            status_code = e.response.status_code
+            raise HTTPException(status_code=status_code, detail=error_detail)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Registration error: {str(e)}")
+
+@app.post("/api/auth/login", response_model=TokenResponse)
+async def login(login_data: UserLogin):
+    """Login through the API Gateway pattern."""
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.post(
+                f"{DATABASE_SERVICE_URL}/auth/login",
+                json=login_data.model_dump()
+            )
+            response.raise_for_status()
+            return response.json()
+        except httpx.HTTPStatusError as e:
+            error_detail = e.response.json().get("detail", str(e))
+            status_code = e.response.status_code
+            raise HTTPException(status_code=status_code, detail=error_detail)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Login error: {str(e)}")
+
+@app.post("/api/auth/refresh", response_model=TokenResponse)
+async def refresh_token(refresh: RefreshToken):
+    """Refresh authentication token through the API Gateway pattern."""
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.post(
+                f"{DATABASE_SERVICE_URL}/auth/refresh",
+                json=refresh.model_dump()
+            )
+            response.raise_for_status()
+            return response.json()
+        except httpx.HTTPStatusError as e:
+            error_detail = e.response.json().get("detail", str(e))
+            status_code = e.response.status_code
+            raise HTTPException(status_code=status_code, detail=error_detail)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Token refresh error: {str(e)}")
+
+@app.get("/api/auth/student/me")
+async def get_student_profile(request: Request):
+    """Get student profile through the API Gateway pattern."""
+    authorization = request.headers.get("Authorization")
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Authorization header is required")
+    
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.get(
+                f"{DATABASE_SERVICE_URL}/auth/student/me",
+                headers={"Authorization": authorization}
+            )
+            response.raise_for_status()
+            return response.json()
+        except httpx.HTTPStatusError as e:
+            error_detail = e.response.json().get("detail", str(e))
+            status_code = e.response.status_code
+            raise HTTPException(status_code=status_code, detail=error_detail)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Profile error: {str(e)}")
+
+@app.get("/api/auth/teacher/me")
+async def get_teacher_profile(request: Request):
+    """Get teacher profile through the API Gateway pattern."""
+    authorization = request.headers.get("Authorization")
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Authorization header is required")
+    
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.get(
+                f"{DATABASE_SERVICE_URL}/auth/teacher/me",
+                headers={"Authorization": authorization}
+            )
+            response.raise_for_status()
+            return response.json()
+        except httpx.HTTPStatusError as e:
+            error_detail = e.response.json().get("detail", str(e))
+            status_code = e.response.status_code
+            raise HTTPException(status_code=status_code, detail=error_detail)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Profile error: {str(e)}")
 
 @app.get("/health")
 async def health_check():

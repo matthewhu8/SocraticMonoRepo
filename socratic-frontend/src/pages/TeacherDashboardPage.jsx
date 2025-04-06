@@ -62,6 +62,9 @@ function TeacherDashboardPage() {
   return (
     <div className="teacher-dashboard-container">
       <div className="dashboard-header">
+        <div className="header-top">
+          <Link to="/" className="back-link">← Back to Home</Link>
+        </div>
         <h1>IBDP Business Management Teacher Dashboard</h1>
         <p>Welcome back Garima</p>
       </div>
@@ -184,10 +187,6 @@ function TeacherDashboardPage() {
             </ul>
           </div>
         </div>
-      </div>
-      
-      <div className="dashboard-footer">
-        <Link to="/" className="back-link">Back to Home</Link>
       </div>
     </div>
   );

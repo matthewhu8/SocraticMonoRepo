@@ -1,11 +1,16 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, status
 from sqlalchemy.orm import Session
-from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any
-from datetime import datetime
+from pydantic import BaseModel, Field, EmailStr
+from typing import List, Optional, Dict, Any, Union
+from datetime import datetime, timedelta
 
 from .database.database import get_db, engine
-from .database.models import Base, Test, Question, TestQuestion, TestResult, QuestionResult, ChatMessage
+from .database.models import Base, Test, Question, TestQuestion, TestResult, QuestionResult, ChatMessage, StudentUser, TeacherUser
+from .auth.utils import verify_password, get_password_hash, create_access_token, create_refresh_token
+from .auth.schemas import TokenResponse, UserLogin, StudentCreate, TeacherCreate, StudentResponse, TeacherResponse, RefreshToken
+from .auth.dependencies import get_current_user, get_current_student, get_current_teacher
+from jose import jwt, JWTError
+from .auth.utils import SECRET_KEY, ALGORITHM
 
 Base.metadata.create_all(bind=engine)
 
@@ -84,6 +89,151 @@ class TestResponse(TestBase):
     code: str
     isPracticeExam: bool = False
     questions: List[QuestionResponse] = []
+
+# Authentication endpoints
+@app.post("/auth/student/register", response_model=StudentResponse)
+async def register_student(student: StudentCreate, db: Session = Depends(get_db)):
+    """Register a new student user."""
+    # Check if email already exists
+    db_student = db.query(StudentUser).filter(StudentUser.email == student.email).first()
+    if db_student:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already registered"
+        )
+    
+    # Create new student user with hashed password
+    hashed_password = get_password_hash(student.password)
+    db_student = StudentUser(
+        name=student.name,
+        email=student.email,
+        hashed_password=hashed_password,
+        grade=student.grade
+    )
+    
+    db.add(db_student)
+    db.commit()
+    db.refresh(db_student)
+    
+    return db_student
+
+@app.post("/auth/teacher/register", response_model=TeacherResponse)
+async def register_teacher(teacher: TeacherCreate, db: Session = Depends(get_db)):
+    """Register a new teacher user."""
+    # Check if email already exists
+    db_teacher = db.query(TeacherUser).filter(TeacherUser.email == teacher.email).first()
+    if db_teacher:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already registered"
+        )
+    
+    # Create new teacher user with hashed password
+    hashed_password = get_password_hash(teacher.password)
+    db_teacher = TeacherUser(
+        name=teacher.name,
+        email=teacher.email,
+        hashed_password=hashed_password,
+        subject=teacher.subject,
+        school=teacher.school
+    )
+    
+    db.add(db_teacher)
+    db.commit()
+    db.refresh(db_teacher)
+    
+    return db_teacher
+
+@app.post("/auth/login", response_model=TokenResponse)
+async def login(login_data: UserLogin, db: Session = Depends(get_db)):
+    """Authenticate a user and return JWT tokens."""
+    # Try to find user in student table
+    student = db.query(StudentUser).filter(StudentUser.email == login_data.email).first()
+    if student and verify_password(login_data.password, student.hashed_password):
+        # Create token data for student
+        token_data = {"sub": str(student.id), "type": "student"}
+        access_token = create_access_token(token_data)
+        refresh_token = create_refresh_token(token_data)
+        return {"access_token": access_token, "refresh_token": refresh_token}
+    
+    # If not found in student table, try teacher table
+    teacher = db.query(TeacherUser).filter(TeacherUser.email == login_data.email).first()
+    if teacher and verify_password(login_data.password, teacher.hashed_password):
+        # Create token data for teacher
+        token_data = {"sub": str(teacher.id), "type": "teacher"}
+        access_token = create_access_token(token_data)
+        refresh_token = create_refresh_token(token_data)
+        return {"access_token": access_token, "refresh_token": refresh_token}
+    
+    # If not found in either table, raise exception
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Incorrect email or password",
+        headers={"WWW-Authenticate": "Bearer"}
+    )
+
+@app.post("/auth/refresh", response_model=TokenResponse)
+async def refresh_token(refresh: RefreshToken, db: Session = Depends(get_db)):
+    """Use a refresh token to get a new access token."""
+    try:
+        # Decode refresh token
+        payload = jwt.decode(refresh.refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
+        
+        # Check if it's a refresh token
+        if not payload.get("refresh"):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid refresh token",
+                headers={"WWW-Authenticate": "Bearer"}
+            )
+        
+        # Get user ID and type from token
+        user_id = payload.get("sub")
+        user_type = payload.get("type")
+        
+        if not user_id or not user_type:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token data",
+                headers={"WWW-Authenticate": "Bearer"}
+            )
+        
+        # Verify user exists
+        if user_type == "student":
+            user = db.query(StudentUser).filter(StudentUser.id == int(user_id)).first()
+        else:
+            user = db.query(TeacherUser).filter(TeacherUser.id == int(user_id)).first()
+        
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found",
+                headers={"WWW-Authenticate": "Bearer"}
+            )
+        
+        # Create new tokens
+        token_data = {"sub": user_id, "type": user_type}
+        new_access_token = create_access_token(token_data)
+        new_refresh_token = create_refresh_token(token_data)
+        
+        return {"access_token": new_access_token, "refresh_token": new_refresh_token}
+    
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+
+@app.get("/auth/student/me", response_model=StudentResponse)
+async def get_student_me(current_user: StudentUser = Depends(get_current_student)):
+    """Get the current student's information."""
+    return current_user
+
+@app.get("/auth/teacher/me", response_model=TeacherResponse)
+async def get_teacher_me(current_user: TeacherUser = Depends(get_current_teacher)):
+    """Get the current teacher's information."""
+    return current_user
 
 # Test endpoints
 @app.post("/tests", response_model=TestResponse)

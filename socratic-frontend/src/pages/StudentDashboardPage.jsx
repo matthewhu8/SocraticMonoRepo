@@ -1,9 +1,13 @@
 //// filepath: /Users/matthewhu/Code/SocraticMonoRepo/socratic-frontend/src/pages/StudentDashboardPage.jsx
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import '../styles/StudentDashboardPage.css';
+import { AuthContext } from '../contexts/AuthContext';
 
 function StudentDashboardPage() {
+  const { currentUser } = useContext(AuthContext);
+  const userName = currentUser?.name || 'Student';
+
   const [recommendedTopics, setRecommendedTopics] = useState([
     { id: 1, name: "Business Organization", progress: 65, priority: "high", aiConfidence: 92, aiRecommended: true },
     { id: 2, name: "Human Resources", progress: 40, priority: "medium", aiConfidence: 78, aiRecommended: false },
@@ -87,6 +91,10 @@ function StudentDashboardPage() {
     <div className="student-dashboard-container">
       <div className="sticky-nav">
         <div className="nav-container">
+          <Link to="/" className="nav-item">
+            <span className="nav-icon">🏠</span>
+            <span className="nav-label">Home</span>
+          </Link>
           <Link to="/student/learning-modules" className={`nav-item ${isActive('/student/learning-modules') ? 'active' : ''}`}>
             <span className="nav-icon">📚</span>
             <span className="nav-label">Learning Modules</span>
@@ -99,9 +107,9 @@ function StudentDashboardPage() {
       </div>
 
       <div className="dashboard-header">
-        <h1>Student Dashboard</h1>
+        <h1>{userName}'s Student Dashboard</h1>
         <p>Track your progress in IBDP Business Management</p>
-        <span className="welcome-message">Welcome back, Business Management Student!</span>
+        <span className="welcome-message">Welcome back, {userName}!</span>
       </div>
 
       <div className="dashboard-content">
@@ -329,10 +337,6 @@ function StudentDashboardPage() {
             </div>
           </div>
         </div>
-      </div>
-
-      <div className="dashboard-footer">
-        <Link to="/" className="back-link">Back to Home</Link>
       </div>
     </div>
   );

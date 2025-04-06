@@ -98,7 +98,7 @@ function AssessmentPage() {
           <Link to="/" className="nav-item">
             <span className="nav-label">Socratic</span>
           </Link>
-          <Link to="/student" className="nav-item">
+          <Link to="/student/dashboard" className="nav-item">
             <span className="nav-label">Student Dashboard</span>
           </Link>
         </div>

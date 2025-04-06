@@ -12,16 +12,16 @@ function HomePage() {
       </div>
       
       <div className="dashboard-options">
-        <Link to="/student" className="dashboard-card">
+        <Link to="/student/auth" className="dashboard-card">
           <div className="card-icon">👨‍🎓</div>
-          <h2>Student Dashboard</h2>
-          <p>Access your tests, practice problems, and learning modules</p>
+          <h2>Student Access</h2>
+          <p>Sign in or create an account to access your tests, practice problems, and learning modules</p>
         </Link>
         
-        <Link to="/teachers" className="dashboard-card">
+        <Link to="/teachers/auth" className="dashboard-card">
           <div className="card-icon">👩‍🏫</div>
-          <h2>Teacher Dashboard</h2>
-          <p>Create and manage tests, learning modules, and practice exams</p>
+          <h2>Teacher Access</h2>
+          <p>Sign in or create an account to manage tests, learning modules, and practice exams</p>
         </Link>
       </div>
       

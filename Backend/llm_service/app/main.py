@@ -10,21 +10,15 @@ import time
 import asyncio
 from pathlib import Path
 from dotenv import load_dotenv
-from huggingface_hub import login
+from huggingface_hub import login, InferenceClient
 import torch
+from teapotai import TeapotAI
+
 
 # Load environment variables from .env file
 load_dotenv()
 
 app = FastAPI(title="LLM Microservice")
-
-# In-memory question counters for specific problems
-question_counters = {
-    "economies_of_scale": 0,
-    "leadership_styles": 0,
-    "social_responsibility": 0,
-    "pricing_strategies": 0
-}
 
 class LLMRequest(BaseModel):
     query: str
@@ -43,68 +37,43 @@ else:
     print("Warning: No Hugging Face token found. Authentication may fail for gated models.")
 
 # Configuration from environment variables - ensure MODEL_NAME from .env is used
-MODEL_NAME = os.getenv("MODEL_NAME")
-if not MODEL_NAME:
-    print("Warning: MODEL_NAME not found in environment variables. Using default model.")
-    MODEL_NAME = "microsoft/phi-2"  # Changed default to phi-2 which is more accessible
-print(f"Using model: {MODEL_NAME}")
-
+MODEL_NAME = os.getenv("MODEL_NAME", "mistralai/Mistral-7B-Instruct-v0.2")
 VECTOR_SERVICE_URL = os.getenv("VECTOR_SERVICE_URL", "http://localhost:8002")
 MODEL_CACHE_DIR = os.getenv("MODEL_CACHE_DIR", "./model_cache")  # Using local directory
 MAX_LENGTH = int(os.getenv("MAX_LENGTH", "2048"))
-TEMPERATURE = float(os.getenv("TEMPERATURE", "0.7"))
-DEVICE = os.getenv("DEVICE", "-1")  # Use "0" for first GPU, "-1" for CPU
-MAX_RESPONSE_LENGTH = int(os.getenv("MAX_RESPONSE_LENGTH", "50"))  # Cap response length
+TEMPERATURE = float(os.getenv("TEMPERATURE", "0.8"))
+DEVICE = os.getenv("DEVICE", "0")  # Use "0" for first GPU, "-1" for CPU
+MAX_RESPONSE_LENGTH = int(os.getenv("MAX_RESPONSE_LENGTH", "180"))  # Increased response length cap
 
 # Create cache directory if it doesn't exist
-Path(MODEL_CACHE_DIR).mkdir(parents=True, exist_ok=True)
-
 print(f"Loading {MODEL_NAME} model using pipeline...")
 try:
-    # Set device based on configuration and availability
-    device_name = DEVICE
-    
-    # If set to 'mps', verify MPS is available
-    if device_name == "mps" and not torch.backends.mps.is_available():
-        print("MPS requested but not available, falling back to CPU")
-        device_name = "cpu"
-    # If set to 'cuda', verify CUDA is available
-    elif (device_name == "cuda" or device_name == "0") and not torch.cuda.is_available():
-        print("CUDA requested but not available, falling back to CPU")
-        device_name = "cpu"
-    elif device_name == "-1":
-        device_name = "cpu"
-    
-    print(f"Using device: {device_name}")
-    
     # Initialize the pipeline with optimized settings
     llm_pipeline = pipeline(
         task="text-generation",
         model=MODEL_NAME,
-        device=device_name,
+        device=0,
         torch_dtype=torch.float16,  # Use half precision to reduce memory usage
         model_kwargs={
             "cache_dir": MODEL_CACHE_DIR,
             "low_cpu_mem_usage": True,
             "use_auth_token": hf_token,
-            "load_in_8bit": device_name != "mps",  # 8-bit quantization (not supported on MPS)
-            "attn_implementation": "flash_attention_2" if device_name == "cuda" else "eager",  # Use flash attention on CUDA
+            "attn_implementation": "eager",  # Use flash attention on CUDA
         },
-        trust_remote_code=True
+        trust_remote_code=True 
     )
-    print(f"{MODEL_NAME} model loaded successfully on {device_name}!")
+    print(f"{MODEL_NAME} model loaded successfully!")
 except Exception as e:
     print(f"Error loading model: {e}")
     print(f"Full error details: {repr(e)}")
     raise
 
 
-def format_prompt(system_prompt: str, context: str, query: str) -> str:
+def format_prompt(system_prompt: str, query: str) -> str:
     """Format the prompt according to Mistral instruction format."""
     return f"""<s>[INST] {system_prompt}
 
-{context}
-
+ here is the student's question:
 {query} [/INST]"""
 
 async def get_hidden_values(problem_id: str, query: str) -> Optional[str]:
@@ -168,11 +137,10 @@ async def get_topic_context(problem_id: str, query: str) -> str:
         print(f"Error fetching topic context: {e}")
         return ""
 
+
 @app.post("/generate", response_model=LLMResponse)
 async def generate_text(request: LLMRequest):
     try:
-        print("\n request", request)   
-        # Extract problem ID from context
         problem_id = f"{request.context.get('test_id')}_{request.context.get('question_id')}"
         
         # Get chat history from context
@@ -180,58 +148,7 @@ async def generate_text(request: LLMRequest):
         
         # Check if this is a practice exam or a regular test
         is_practice_exam = request.context.get("isPracticeExam", False)
-        
-        # Hard-coded specific projectile motion problem detection
-
-        economies_of_scale = "Evaluate the impact of economies"
-        leadership_styles = "different leadership styles can influence"
-        social_responsibility = "Examine the role of corporate social responsibility"
-        pricing_strategies = "Explain the key factors that influence pricing strategies"
         public_question = request.context.get("public_question", "")
-        
-        if economies_of_scale in public_question:
-            question_count = question_counters.get("economies_of_scale")
-            question_counters["economies_of_scale"] = question_count + 1
-            await asyncio.sleep(3)
-            
-            if question_count == 0:  # First time asking
-                print("First time asking economies of scale problem")
-                return LLMResponse(
-                    response="Consider both the cost advantages that can come from increased production levels and the potential challenges such as coordination difficulties and diminishing returns as the business grows.",
-                    isHiddenValueResponse=False
-                )
-            
-        elif leadership_styles in public_question:
-            question_count = question_counters.get("leadership_styles", 0)            
-            question_counters["leadership_styles"] = question_count + 1
-            await asyncio.sleep(3)
-            
-            # Return appropriate hint based on question count
-            if question_count == 0:  # First time asking
-                return LLMResponse(
-                    response="Reflect on various leadership approaches and link them to motivational theories. Think about how a the behavior of a leader might foster or hinder an environment that drives employee engagement.",
-                    isHiddenValueResponse=False
-                )
-        elif social_responsibility in public_question:
-            question_count = question_counters.get("social_responsibility", 0)
-            question_counters["social_responsibility"] = question_count + 1
-            await asyncio.sleep(3)
-            
-            if question_count == 0:  # First time asking
-                return LLMResponse(
-                    response="Analyze how CSR initiatives might build stakeholder trust and add value to the brand, while also considering any possible trade-offs or challenges involved in implementing these practices.",
-                    isHiddenValueResponse=False
-                )
-        elif pricing_strategies in public_question:
-            question_count = question_counters.get("pricing_strategies", 0)
-            question_counters["pricing_strategies"] = question_count + 1
-            await asyncio.sleep(3)
-            
-            if question_count == 0:  # First time asking
-                return LLMResponse(
-                    response="Consider internal factors such as cost structure and business objectives alongside external factors like market demand, competitor actions, and customer perceptions.",
-                    isHiddenValueResponse=False
-                )
             
         # First check if this is a request for hidden values
         try:
@@ -253,77 +170,64 @@ async def generate_text(request: LLMRequest):
         
         # Construct the prompt based on what we found
         if hidden_value:
-            system_prompt = f"""You are a helpful teaching assistant. The student is asking about a hidden value in the problem. Since they specifically asked for it, you can provide the hidden value from the context. Be short and to the point.
+            system_prompt = f"""You are a helpful teaching assistant. The student is asking about a hidden value in the problem. Since they specifically asked for it, you can provide the hidden value from the context. Be clear and informative.
 
-IMPORTANT: Keep your response under 60 characters. Be concise and direct."""
+This is the problem they are trying to solve: {public_question}
+
+Here is the hidden value: {hidden_value}"""
             is_hidden_value_response = True
-            llm_context = f"""
-            This is the problem they are trying to solve: {public_question}
-
-            Here is the hidden value: {hidden_value}
-            """
 
         elif is_practice_exam:
             public_question = str(request.context.get("public_question"))
             
             system_prompt = f"""You are a helpful teaching assistant using Socratic questioning. If the student appears to be stuck on this problem, ask them a question that will help guide their thinking. 
-            DO NOT provide direct answers. Use the provided teaching materials, chat history, and the public question they are trying to solve to help the student understand the problem and guide them towards the solution.
-            
-            IMPORTANT: Keep your response under 60 characters. Be concise and direct. 
-            Review the chat history to ensure your questions to ensure you aren't asking the same question. Don't ask the same question twice.
-            
-            Chat history: {chat_history}
+DO NOT provide direct answers. If there is a helpful teaching material, use it to help the student understand the problem and guide them towards the solution.
 
-            This is the problem they are trying to solve: {public_question}
-            """
-            llm_context = f"""
-            This is the problem they are trying to solve: {public_question}
+Review the chat history to ensure you aren't repeating yourself; if you are, ask a different question. Build off of the previous question if possible.
 
-            Here is the chat history: {chat_history}
+Chat history: {chat_history}
 
-            Here are some help teaching materials: {topic_context}
-            """
+The problem they are trying to solve: {public_question}
+
+Helpful information: {topic_context}"""
             
             is_hidden_value_response = False
         
         full_prompt = format_prompt(
             system_prompt,
-            hidden_value if hidden_value else topic_context,
-            request.query
+            request.query, 
         )
 
         print(f"Processing query with context...")
-        print("full prompt\n:", full_prompt)
-        
-        response = llm_pipeline(
-            full_prompt,
-            context = llm_context,
-            do_sample=True,
-            temperature=TEMPERATURE,
-            max_new_tokens=MAX_RESPONSE_LENGTH,
-            pad_token_id=0,
-            num_return_sequences=1,
-            early_stopping=True,
-            use_cache=True,  # Enable KV caching for faster generation
-            return_full_text=False  # Don't include prompt in output to save processing
-            )
-        generated_text = response[0]["generated_text"]
-        
-        # Extract the assistant's response from the generated text
-        # For Mistral format, extract content between [/INST] and end
-        if "[/INST]" in full_prompt:
-            # This is for Mistral format
-            assistant_response = generated_text.strip()
-        else:
-            # Fallback to previous extraction method
-            assistant_response = generated_text.split("<|assistant|>")[-1].strip()
-            if "<|endoftext|>" in assistant_response:
-                assistant_response = assistant_response.split("<|endoftext|>")[0].strip()
-        
-        
+
+        assistant_response = teapot_ai.query(
+            query=request.query,
+            context=system_prompt,
+        )
+
+        # try:
+        #     response = llm_pipeline(
+        #         full_prompt,
+        #         do_sample=True,
+        #         temperature=TEMPERATURE,
+        #         pad_token_id=0,
+        #         num_return_sequences=1,
+        #         early_stopping=False,
+        #         use_cache=True,
+        #         return_full_text=False
+        #     )
+        #     generated_text = response[0]["generated_text"]
+            
+        #     # two extraction methods for different model formats
+        #     if "[/INST]" in full_prompt:
+        #         assistant_response = generated_text.strip()
+        #     else:
+        #         assistant_response = generated_text.split("<|assistant|>")[-1].strip()
+        #         if "<|endoftext|>" in assistant_response:
+        #             assistant_response = assistant_response.split("<|endoftext|>")[0].strip()
+        # except Exception as e:
+        #     print(f"API call failed, falling back to local model: {e}")            
                 
-        print("assistant response\n:", assistant_response, "\n\n")
-        print("is hidden value response\n:", is_hidden_value_response, "\n\n")
         return LLMResponse(response=assistant_response, isHiddenValueResponse=is_hidden_value_response)
             
         
@@ -332,4 +236,10 @@ IMPORTANT: Keep your response under 60 characters. Be concise and direct."""
         print(f"LLM service: An error occurred while generating the response: {e}")
         print(f"Full error details: {repr(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+# Add health check endpoint
+@app.get("/health")
+async def health_check():
+    """Health check endpoint."""
+    return {"status": "healthy"}
 

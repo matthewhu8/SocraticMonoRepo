@@ -37,6 +37,18 @@
   border-radius: 8px;
   transition: all 0.2s ease;
   min-width: 120px;
+  position: relative;
+}
+
+/* Special styling for the Home button */
+.nav-item:first-child {
+  background-color: #f8f9fa;
+  border: 1px solid #e2e6ea;
+}
+
+.nav-item:first-child:hover {
+  background-color: #e9f5fe;
+  border-color: #3498db;
 }
 
 .nav-item:hover {
@@ -180,8 +192,8 @@
 }
 
 .knowledge-node {
-  width: 130px;
-  height: 130px;
+  width: 110px;
+  height: 110px;
   border-radius: 50%;
   display: flex;
   flex-direction: column;
@@ -214,7 +226,7 @@
 
 .topic-progress {
   position: absolute;
-  top: 30px;
+  top: 25px;
   width: 80%;
   text-align: center;
 }
@@ -241,10 +253,10 @@
 
 .topic-name {
   font-weight: bold;
-  font-size: 1.2rem;
+  font-size: 0.5rem;
   color: rgba(0, 0, 0, 0.8);
   text-align: center;
-  padding: 0 10px;
+  padding: 0 5px;
   margin-top: 15px;
 }
 
