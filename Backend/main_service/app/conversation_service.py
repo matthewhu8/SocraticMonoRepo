@@ -12,7 +12,7 @@ class ConversationService:
         self,
         llm_service_url: str,
         database_service_url: str,
-        redis_url: str = "redis://localhost:6379"
+        redis_url: str = "redis://redis:6379"
     ):
         """Initialize the ConversationService with service URLs and Redis connection."""
         self.llm_service_url = llm_service_url

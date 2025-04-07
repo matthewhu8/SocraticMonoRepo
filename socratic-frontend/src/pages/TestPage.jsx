@@ -31,7 +31,7 @@ function TestPage() {
         setLoading(true);
         
         const userId = '30'; // Convert to string to match backend expectations
-        const response = await fetch(`http://127.0.0.1:8000/tests/${testCode}?user_id=${userId}`);
+        const response = await fetch(`http://localhost:8000/tests/${testCode}?user_id=${userId}`);
         
         console.log('Response status:', response.status);
         
@@ -209,7 +209,7 @@ function TestPage() {
       
       console.log("Sending chat data to backend:", chatPayload);
       
-      const response = await fetch('http://127.0.0.1:8000/chat', {
+      const response = await fetch('http://localhost:8000/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(chatPayload),
@@ -259,7 +259,7 @@ function TestPage() {
         answer: answer
       };
 
-      const response = await fetch('http://127.0.0.1:8000/submit-answer', {
+      const response = await fetch('http://localhost:8000/submit-answer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(submission)
@@ -344,7 +344,7 @@ function TestPage() {
       
       console.log("Submitting test with payload:", finishTestPayload);
       
-      const response = await fetch('http://127.0.0.1:8000/finish-test', {
+      const response = await fetch('http://localhost:8000/finish-test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(finishTestPayload)

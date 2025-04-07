@@ -13,9 +13,9 @@ import requests
 load_dotenv()
 
 # Service URLs from environment variables
-DATABASE_SERVICE_URL = os.getenv("DATABASE_SERVICE_URL", "http://localhost:8001")
-VECTOR_SERVICE_URL = os.getenv("VECTOR_SERVICE_URL", "http://localhost:8002")
-LLM_SERVICE_URL = os.getenv("LLM_SERVICE_URL", "http://localhost:8003")
+DATABASE_SERVICE_URL = os.getenv("DATABASE_SERVICE_URL", "http://database-service:8001")
+VECTOR_SERVICE_URL = os.getenv("VECTOR_SERVICE_URL", "http://vector-service:8002")
+LLM_SERVICE_URL = os.getenv("LLM_SERVICE_URL", "http://llm-service:8003")
 
 app = FastAPI(title="Socratic Main Service")
 
