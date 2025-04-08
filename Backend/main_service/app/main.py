@@ -16,6 +16,7 @@ load_dotenv()
 DATABASE_SERVICE_URL = os.getenv("DATABASE_SERVICE_URL", "http://database-service:8001")
 VECTOR_SERVICE_URL = os.getenv("VECTOR_SERVICE_URL", "http://vector-service:8002")
 LLM_SERVICE_URL = os.getenv("LLM_SERVICE_URL", "http://llm-service:8003")
+REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379")
 
 app = FastAPI(title="Socratic Main Service")
 
@@ -27,7 +28,8 @@ app.add_middleware(
         "http://localhost:80",    # Frontend in containerized environment
         "http://localhost",       # Frontend in containerized environment (default port 80)
         "http://frontend:80",     # Frontend service name in Docker network
-        "http://frontend",        # Frontend service name in Docker network (default port 80)
+        "http://frontend",
+        "https://your-frontend-domain.up.railway.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -133,7 +135,8 @@ class TestSessionStart(BaseModel):
 # Initialize services
 convo_service = ConversationService(
     llm_service_url=LLM_SERVICE_URL,
-    database_service_url=DATABASE_SERVICE_URL
+    database_service_url=DATABASE_SERVICE_URL,
+    redis_url=REDIS_URL
 )
 
 # Authentication endpoints
