@@ -1,7 +1,7 @@
 FROM python:3.10-slim
 
 WORKDIR /app
-ENV MODEL_NAME="deepseek-ai/DeepSeek-V3"
+ENV MODEL_NAME="mistralai/Mistral-7B-v0.1"
 ENV DEVICE="-1"
 
 
