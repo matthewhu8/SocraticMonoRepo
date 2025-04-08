@@ -3,7 +3,7 @@ FROM python:3.10-slim
 WORKDIR /app
 ENV MODEL_NAME="deepseek-ai/DeepSeek-V3"
 ENV DEVICE="-1"
-ENV HUGGING_FACE_HUB_TOKEN=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
+
 
 # Install system dependencies
 RUN apt-get update && \
