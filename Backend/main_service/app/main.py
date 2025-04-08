@@ -29,7 +29,7 @@ app.add_middleware(
         "http://localhost",       # Frontend in containerized environment (default port 80)
         "http://frontend:80",     # Frontend service name in Docker network
         "http://frontend",
-        "https://frontend-production-3661.up.railway.app",
+        "http://frontend-production-3661.up.railway.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
