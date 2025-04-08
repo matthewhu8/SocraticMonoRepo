@@ -2,6 +2,7 @@ import React, { useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import '../styles/AuthPage.css';
 import { AuthContext } from '../contexts/AuthContext';
+import API_URL from '../config/api';
 
 function StudentAuthPage() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -40,7 +41,7 @@ function StudentAuthPage() {
         }
         
         console.log("Attempting to register with:", formData.email);
-        const registerResponse = await fetch('http://localhost:8000/api/auth/student/register', {
+        const registerResponse = await fetch(`${API_URL}/api/auth/student/register`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -77,7 +78,7 @@ function StudentAuthPage() {
   const loginUser = async (email, password) => {
     try {
       console.log("Attempting login with:", email);
-      const loginResponse = await fetch('http://localhost:8000/api/auth/login', {
+      const loginResponse = await fetch(`${API_URL}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

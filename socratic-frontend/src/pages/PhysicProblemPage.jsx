@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Header from '../components/Header';
 import ProblemDisplay from '../components/ProblemDisplay';
 import ChatBox from '../components/ChatBox';
+import API_URL from '../config/api';
 
 function PhysicsProblemPage() {
   const [messages, setMessages] = useState([]);
@@ -19,7 +20,7 @@ function PhysicsProblemPage() {
     setMessages(prev => [...prev, userMessage]);
 
     try {
-      const response = await fetch('http://127.0.0.1:8000/chat', {
+      const response = await fetch(`${API_URL}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         // Passing problem_id and the user's query

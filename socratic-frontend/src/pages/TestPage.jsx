@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import ProblemDisplay from '../components/ProblemDisplay';
 import ChatBox from '../components/ChatBox';
 import '../styles/TestPage.css';
+import API_URL from '../config/api';
 
 function TestPage() {
   const { testCode } = useParams();
@@ -31,7 +32,7 @@ function TestPage() {
         setLoading(true);
         
         const userId = '30'; // Convert to string to match backend expectations
-        const response = await fetch(`http://localhost:8000/tests/${testCode}?user_id=${userId}`);
+        const response = await fetch(`${API_URL}/tests/${testCode}?user_id=${userId}`);
         
         console.log('Response status:', response.status);
         
@@ -209,7 +210,7 @@ function TestPage() {
       
       console.log("Sending chat data to backend:", chatPayload);
       
-      const response = await fetch('http://localhost:8000/chat', {
+      const response = await fetch(`${API_URL}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(chatPayload),
@@ -259,7 +260,7 @@ function TestPage() {
         answer: answer
       };
 
-      const response = await fetch('http://localhost:8000/submit-answer', {
+      const response = await fetch(`${API_URL}/submit-answer`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(submission)
@@ -344,7 +345,7 @@ function TestPage() {
       
       console.log("Submitting test with payload:", finishTestPayload);
       
-      const response = await fetch('http://localhost:8000/finish-test', {
+      const response = await fetch(`${API_URL}/finish-test`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(finishTestPayload)

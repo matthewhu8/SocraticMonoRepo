@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import '../styles/CreateTestPage.css';
+import API_URL from '../config/api';
 
 function CreatePracticeExamPage() {
   const [questions, setQuestions] = useState([]);
@@ -183,7 +184,7 @@ function CreatePracticeExamPage() {
     };
 
     try {
-      const response = await fetch('http://localhost:8000/tests', {
+      const response = await fetch(`${API_URL}/tests`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
